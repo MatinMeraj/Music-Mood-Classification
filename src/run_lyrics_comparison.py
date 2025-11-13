@@ -10,7 +10,7 @@ import joblib
 import sys
 
 # Import our modules
-from lyrics_classifier import LyricsClassifier
+from lyrics_classifier_free import FreeLyricsClassifier
 from compare_audio_lyrics import compare_predictions, create_comparison_visualization
 
 # Setup paths
@@ -95,27 +95,19 @@ def get_audio_predictions(df, model_data):
         return None
 
 
-def get_lyrics_predictions(df, max_songs=50, delay=1):
+def get_lyrics_predictions(df, max_songs=None):
     """
-    Get predictions from the lyrics classifier (OpenAI).
+    Get predictions from the FREE lyrics classifier (VADER).
     
     Args:
         df: DataFrame with lyrics
-        max_songs: Maximum number of songs to classify (to save API costs)
-        delay: Delay between API calls (seconds)
+        max_songs: Maximum number of songs to classify (None = all songs)
+                   VADER is free and fast, so we can process all songs!
     
     Returns:
         DataFrame with lyrics predictions added
     """
-    print("\nGetting lyrics predictions...")
-    
-    # Check if API key is set
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        print("ERROR: OPENAI_API_KEY environment variable not set.")
-        print("Please set it before running this script.")
-        print("Example: export OPENAI_API_KEY='your-api-key-here'")
-        return None
+    print("\nGetting lyrics predictions using VADER (FREE)...")
     
     # Check if lyrics column exists
     lyrics_column = 'text'  # Common column name for lyrics
@@ -135,12 +127,20 @@ def get_lyrics_predictions(df, max_songs=50, delay=1):
     
     print(f"Using lyrics column: {lyrics_column}")
     
-    # Initialize lyrics classifier
-    classifier = LyricsClassifier(api_key=api_key)
+    # Initialize FREE lyrics classifier (VADER)
+    try:
+        classifier = FreeLyricsClassifier()
+    except ImportError as e:
+        print(f"ERROR: {e}")
+        print("Please install VADER: pip install vaderSentiment")
+        return None
     
-    # Classify songs
-    print(f"Classifying up to {max_songs} songs...")
-    print("This may take a while and will use OpenAI API credits.")
+    # Classify songs (no delay needed - it's free and local!)
+    if max_songs:
+        print(f"Classifying {max_songs} songs...")
+    else:
+        print(f"Classifying all {len(df)} songs...")
+    print("Using FREE VADER sentiment analysis (no API costs, runs locally!)")
     print()
     
     df_with_predictions = classifier.classify_dataset(
@@ -149,7 +149,7 @@ def get_lyrics_predictions(df, max_songs=50, delay=1):
         song_column='track_name' if 'track_name' in df.columns else None,
         artist_column='artists' if 'artists' in df.columns else None,
         max_songs=max_songs,
-        delay=delay
+        delay=0  # No delay needed for VADER
     )
     
     return df_with_predictions
@@ -166,6 +166,8 @@ def main():
     
     # Step 1: Load dataset
     print("Step 1: Loading dataset...")
+    print(f"Loading from {DATASET_PATH}...")
+    print("(This may take a moment for large datasets...)")
     if not DATASET_PATH.exists():
         print(f"ERROR: Dataset not found at {DATASET_PATH}")
         print("Please make sure the dataset exists.")
@@ -173,7 +175,7 @@ def main():
         return
     
     df = pd.read_csv(DATASET_PATH)
-    print(f"Loaded {len(df)} songs from dataset")
+    print(f"✓ Loaded {len(df)} songs from dataset")
     print(f"Columns: {list(df.columns)}")
     print()
     
@@ -197,20 +199,13 @@ def main():
     print("Audio predictions added to dataset")
     print()
     
-    # Step 3: Get lyrics predictions (limit to save API costs)
+    # Step 3: Get lyrics predictions using FREE VADER
     print("Step 3: Getting lyrics predictions...")
-    print("NOTE: This will use OpenAI API and may cost money.")
-    print("Limiting to first 50 songs for testing. Change max_songs to process more.")
+    print("Using FREE VADER sentiment analysis (no API costs, runs locally!)")
+    print("Processing all songs with lyrics...")
     print()
     
-    # Ask user if they want to proceed
-    response = input("Do you want to proceed with lyrics classification? (yes/no): ")
-    if response.lower() != 'yes':
-        print("Skipping lyrics classification.")
-        print("You can run this script again later with your API key set.")
-        return
-    
-    df_with_lyrics = get_lyrics_predictions(df, max_songs=50, delay=1)
+    df_with_lyrics = get_lyrics_predictions(df, max_songs=None)  # Process all songs
     
     if df_with_lyrics is None:
         print("ERROR: Could not get lyrics predictions.")
