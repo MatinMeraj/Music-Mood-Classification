@@ -37,7 +37,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/.venv"
+VIRTUAL_ENV="/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/Spotify-Song-Classifier/.venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
