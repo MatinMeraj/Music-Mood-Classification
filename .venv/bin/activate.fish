@@ -29,7 +29,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/.venv"
+set -gx VIRTUAL_ENV "/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/Spotify-Song-Classifier/.venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

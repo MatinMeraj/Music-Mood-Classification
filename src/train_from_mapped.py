@@ -1,6 +1,10 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+#for visualizations
+import matplotlib.pyplot as plt
+from sklearn.metrics import ConfusionMatrixDisplay
+
 from pathlib import Path
 import re
 import numpy as np
@@ -15,6 +19,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import joblib
+
+FIG_DIR = Path("figures")
+FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 #paths for inputs and output 
 PROCESSED = Path("data/processed/songs_mapped.csv")
@@ -157,19 +164,47 @@ def main():
     }
 
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    
+    results = {}      # to store CV and test accuracy for all models
+    rf_pipe = None    # will hold the fitted RF pipeline
 
     print("Model comparison (CV on train, then test on holdout):")
     best_name, best_pipe, best_cv = None, None, -1.0
+
     for name, pipe in candidates.items():
         cv_scores = cross_val_score(pipe, X_train, y_train, cv=skf)
         pipe.fit(X_train, y_train)
         y_pred = pipe.predict(X_test)
         test_acc = accuracy_score(y_test, y_pred)
+
         print(f"{name:6s}  CV={cv_scores.mean():.3f}±{cv_scores.std():.3f}  Test={test_acc:.3f}")
+
+        # store metrics
+        results[name] = {
+            "cv_mean": cv_scores.mean(),
+            "cv_std": cv_scores.std(),
+            "test_acc": test_acc,
+        }
+
+        # remember RF pipeline specifically
+        if name == "RF":
+            rf_pipe = pipe
+
         if cv_scores.mean() > best_cv:
             best_cv, best_name, best_pipe = cv_scores.mean(), name, pipe
 
-    # Final report
+    # Final report & Figures
+    # --- Class distribution (overall mood counts) ---
+    mood_counts = y.value_counts().reindex(TARGETS)
+    plt.figure()
+    plt.bar(mood_counts.index, mood_counts.values)
+    plt.xlabel("Mood")
+    plt.ylabel("Count")
+    plt.title("Mood Class Distribution (Audio Dataset)")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "mood_class_distribution.png")
+    plt.close()
+
     y_pred = best_pipe.predict(X_test)
     labels_in_test = sorted(set(TARGETS) & set(y_test.unique()))
     print(f"\nBest model: {best_name}")
@@ -199,6 +234,59 @@ def main():
     demo_pred = best_pipe.predict(demo)[0]
     demo_conf = float(np.max(best_pipe.predict_proba(demo)))
     print(f"\nDemo → mood={demo_pred}  confidence={demo_conf:.3f}")
+
+    # --- Accuracy bar chart: CV vs Test for all models ---
+    model_names = list(results.keys())
+    cv_means = [results[m]["cv_mean"] for m in model_names]
+    test_accs = [results[m]["test_acc"] for m in model_names]
+
+    x = np.arange(len(model_names))
+    width = 0.35
+
+    plt.figure()
+    plt.bar(x - width/2, cv_means, width, label="CV accuracy")
+    plt.bar(x + width/2, test_accs, width, label="Test accuracy")
+    plt.xticks(x, model_names)
+    plt.ylabel("Accuracy")
+    plt.title("Audio Model Accuracy (CV vs Test)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "audio_model_accuracy.png")
+    plt.close()
+
+
+    # --- Confusion matrix for RF (rows=true, cols=pred) ---
+    if rf_pipe is not None:
+        rf_pipe.fit(X_train, y_train)  # make sure it's fitted on this split
+        y_pred_rf = rf_pipe.predict(X_test)
+        labels_in_test = sorted(set(TARGETS) & set(y_test.unique()))
+
+        cm_rf = confusion_matrix(y_test, y_pred_rf, labels=labels_in_test)
+        disp = ConfusionMatrixDisplay(confusion_matrix=cm_rf,
+                                      display_labels=labels_in_test)
+        disp.plot(values_format="d")
+        plt.title("Random Forest Confusion Matrix (Audio Model)")
+        plt.tight_layout()
+        plt.savefig(FIG_DIR / "rf_confusion_matrix.png")
+        plt.close()
+    else:
+        print("WARNING: RF pipeline not available for confusion matrix plot.")
+
+    # --- Probability distribution of RF predictions (max class prob) ---
+    proba_rf = rf_pipe.predict_proba(X_test)
+    max_conf = proba_rf.max(axis=1)  # confidence of chosen class
+
+    plt.figure()
+    plt.hist(max_conf, bins=20)
+    plt.xlabel("Prediction confidence")
+    plt.ylabel("Number of songs")
+    plt.title("Random Forest Prediction Confidence Distribution")
+    plt.tight_layout()
+    plt.savefig(FIG_DIR / "rf_confidence_distribution.png")
+    plt.close()
+
+
+
 
 if __name__ == "__main__":
     main()

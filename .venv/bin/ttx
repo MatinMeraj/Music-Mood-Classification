@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/.venv/bin/python3" "$0" "$@"
+'''exec' "/Users/nadinegunwan/Desktop/CMPT310/Mood Classifier Project/Spotify-Song-Classifier/.venv/bin/python3" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
