@@ -12,6 +12,22 @@ import sys
 # Import our modules
 from lyrics_classifier_free import FreeLyricsClassifier
 from compare_audio_lyrics import compare_predictions, create_comparison_visualization
+from enhanced_visualizations import (
+    plot_audio_confidence_distribution,
+    plot_lyrics_confidence_distribution,
+    plot_audio_confidence_by_mood,
+    plot_lyrics_confidence_by_mood,
+    plot_mood_map,
+    plot_audio_prediction_distribution,
+    plot_lyrics_prediction_distribution,
+    plot_audio_lyrics_agreement_pie,
+    plot_audio_lyrics_distribution_comparison,
+    plot_audio_lyrics_confusion_matrix,
+    plot_audio_agreement_by_mood,
+    plot_lyrics_agreement_by_mood,
+    plot_audio_confusion_matrix_vs_true,
+    plot_lyrics_confusion_matrix_vs_true
+)
 
 # Setup paths
 BASE = Path(__file__).resolve().parents[1]
@@ -220,8 +236,8 @@ def main():
         true_label_col='mood' if 'mood' in df_with_lyrics.columns else None
     )
     
-    # Step 5: Create visualization
-    print("\nStep 5: Creating visualization...")
+    # Step 5: Create basic visualization
+    print("\nStep 5: Creating basic comparison visualization...")
     create_comparison_visualization(
         df_with_lyrics,
         audio_pred_col='audio_prediction',
@@ -229,14 +245,44 @@ def main():
         save_path=str(BASE / "audio_lyrics_comparison.png")
     )
     
-    # Step 6: Save results
-    print("\nStep 6: Saving results...")
+    # Step 6: Create enhanced visualizations (Milestone 2 requirements) - one PNG per chart
+    print("\nStep 6: Creating enhanced visualizations (one PNG per chart)...")
+    
+    print("  - Confidence distributions (3a)...")
+    plot_audio_confidence_distribution(save_path=str(BASE / "figures" / "audio_confidence_distribution.png"))
+    plot_lyrics_confidence_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_distribution.png"))
+    plot_audio_confidence_by_mood(save_path=str(BASE / "figures" / "audio_confidence_by_mood.png"))
+    plot_lyrics_confidence_by_mood(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_by_mood.png"))
+    
+    print("  - Mood maps (3b)...")
+    print("    * PCA (fast)...")
+    plot_mood_map(df=None, method='pca', n_samples=10000,
+                  save_path=str(BASE / "figures" / "mood_map_pca.png"))
+    print("    * t-SNE (may take 2-3 minutes)...")
+    plot_mood_map(df=None, method='tsne', n_samples=3000,
+                  save_path=str(BASE / "figures" / "mood_map_tsne.png"))
+    
+    print("  - Audio vs lyrics comparisons (3d)...")
+    plot_audio_prediction_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "audio_prediction_distribution.png"))
+    plot_lyrics_prediction_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_prediction_distribution.png"))
+    plot_audio_lyrics_agreement_pie(df_with_lyrics, save_path=str(BASE / "figures" / "audio_lyrics_agreement_pie.png"))
+    plot_audio_lyrics_distribution_comparison(df_with_lyrics, save_path=str(BASE / "figures" / "audio_lyrics_distribution_comparison.png"))
+    plot_audio_lyrics_confusion_matrix(df_with_lyrics, save_path=str(BASE / "figures" / "audio_lyrics_confusion_matrix.png"))
+    plot_audio_agreement_by_mood(df_with_lyrics, save_path=str(BASE / "figures" / "audio_agreement_by_mood.png"))
+    plot_lyrics_agreement_by_mood(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_agreement_by_mood.png"))
+    if 'mood' in df_with_lyrics.columns:
+        plot_audio_confusion_matrix_vs_true(df_with_lyrics, save_path=str(BASE / "figures" / "audio_confusion_matrix_vs_true.png"))
+        plot_lyrics_confusion_matrix_vs_true(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confusion_matrix_vs_true.png"))
+    
+    # Step 7: Save results
+    print("\nStep 7: Saving results...")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_with_lyrics.to_csv(OUTPUT_PATH, index=False)
     print(f"Saved results to {OUTPUT_PATH}")
     
     print("\n" + "=" * 60)
     print("Comparison complete!")
+    print("All enhanced visualizations saved to figures/ directory")
     print("=" * 60)
 
 
