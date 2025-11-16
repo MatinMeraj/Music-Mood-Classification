@@ -3,7 +3,9 @@ from pathlib import Path
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-PROCESSED = Path("data/processed/songs_mapped.csv")
+# Resolve path relative to project root (parent of src directory)
+BASE = Path(__file__).resolve().parents[1]
+PROCESSED = BASE / "data" / "processed" / "songs_mapped.csv"
 RANDOM_STATE = 42
 
 TARGETS = ["happy", "chill", "sad", "hyped"]
