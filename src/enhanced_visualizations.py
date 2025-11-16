@@ -520,6 +520,118 @@ def plot_audio_confusion_matrix_vs_true(df, audio_pred_col='audio_prediction',
     print(f"Saved: {save_path}")
 
 
+def plot_low_confidence_by_mood(df,
+                                audio_low_col='audio_low_confidence',
+                                lyrics_low_col='lyrics_low_confidence',
+                                audio_pred_col='audio_prediction',
+                                lyrics_pred_col='lyrics_prediction',
+                                save_path=None):
+    """
+    Uncertainty plot: percentage of low-confidence predictions by mood
+    for both audio and lyrics models.
+    """
+    if save_path is None:
+        save_path = FIG_DIR / "uncertainty_by_mood.png"
+
+    moods = ['happy', 'chill', 'sad', 'hyped']
+    df_clean = df.copy()
+
+    if audio_low_col not in df_clean.columns or lyrics_low_col not in df_clean.columns:
+        print("WARNING: low-confidence columns not found; skipping uncertainty_by_mood plot.")
+        return
+
+    audio_rates = []
+    lyrics_rates = []
+
+    for mood in moods:
+        # Audio: group by audio prediction
+        mood_df_audio = df_clean[df_clean[audio_pred_col] == mood]
+        if len(mood_df_audio) > 0:
+            audio_rates.append(100.0 * mood_df_audio[audio_low_col].mean())
+        else:
+            audio_rates.append(0.0)
+
+        # Lyrics: group by lyrics prediction
+        mood_df_lyrics = df_clean[df_clean[lyrics_pred_col] == mood]
+        if len(mood_df_lyrics) > 0:
+            lyrics_rates.append(100.0 * mood_df_lyrics[lyrics_low_col].mean())
+        else:
+            lyrics_rates.append(0.0)
+
+    x = np.arange(len(moods))
+    width = 0.35
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(x - width/2, audio_rates, width, label='Audio', color='#45B7D1')
+    plt.bar(x + width/2, lyrics_rates, width, label='Lyrics', color='#96CEB4')
+    plt.xlabel('Predicted Mood')
+    plt.ylabel('Low-confidence %')
+    plt.title('Low-confidence Predictions by Mood (Audio vs Lyrics)')
+    plt.xticks(x, moods)
+    plt.ylim(0, 100)
+    plt.grid(True, alpha=0.3, axis='y')
+    for i, v in enumerate(audio_rates):
+        plt.text(i - width/2, v + 1, f'{v:.1f}%', ha='center', va='bottom', fontsize=8)
+    for i, v in enumerate(lyrics_rates):
+        plt.text(i + width/2, v + 1, f'{v:.1f}%', ha='center', va='bottom', fontsize=8)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {save_path}")
+
+
+def plot_low_confidence_hist(df,
+                             model='audio',
+                             conf_col_audio='audio_confidence',
+                             conf_col_lyrics='lyrics_confidence',
+                             low_flag_audio='audio_low_confidence',
+                             low_flag_lyrics='lyrics_low_confidence',
+                             save_path=None):
+    """
+    Histogram of low-confidence predictions only, for audio or lyrics model.
+    """
+    if model == 'audio':
+        conf_col = conf_col_audio
+        flag_col = low_flag_audio
+        default_name = "audio_low_conf_hist.png"
+        color = '#45B7D1'
+        title = 'Audio Model: Low-confidence Predictions'
+    else:
+        conf_col = conf_col_lyrics
+        flag_col = low_flag_lyrics
+        default_name = "lyrics_low_conf_hist.png"
+        color = '#96CEB4'
+        title = 'Lyrics Model: Low-confidence Predictions'
+
+    if save_path is None:
+        save_path = FIG_DIR / default_name
+
+    if conf_col not in df.columns or flag_col not in df.columns:
+        print(f"WARNING: columns '{conf_col}' or '{flag_col}' not found; skipping low-confidence histogram for {model}.")
+        return
+
+    df_low = df[df[flag_col]].copy()
+    if df_low.empty:
+        print(f"WARNING: no low-confidence samples for {model}; skipping histogram.")
+        return
+
+    vals = df_low[conf_col].dropna()
+    if vals.empty:
+        print(f"WARNING: no confidence values for low-confidence {model} samples; skipping histogram.")
+        return
+
+    plt.figure(figsize=(8, 5))
+    plt.hist(vals, bins=20, color=color, edgecolor='black', alpha=0.8)
+    plt.xlabel('Prediction confidence')
+    plt.ylabel('Number of songs')
+    plt.title(title)
+    plt.grid(True, alpha=0.3, axis='y')
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved: {save_path}")
+
 def plot_lyrics_confusion_matrix_vs_true(df, lyrics_pred_col='lyrics_prediction',
                                         true_label_col='mood', save_path=None):
     """Lyrics model confusion matrix vs true labels"""

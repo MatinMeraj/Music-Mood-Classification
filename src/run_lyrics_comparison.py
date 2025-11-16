@@ -8,6 +8,7 @@ from pathlib import Path
 import os
 import joblib
 import sys
+import numpy as np
 
 # Import our modules
 from lyrics_classifier_free import FreeLyricsClassifier
@@ -26,7 +27,9 @@ from enhanced_visualizations import (
     plot_audio_agreement_by_mood,
     plot_lyrics_agreement_by_mood,
     plot_audio_confusion_matrix_vs_true,
-    plot_lyrics_confusion_matrix_vs_true
+    plot_lyrics_confusion_matrix_vs_true,
+    plot_low_confidence_by_mood,
+    plot_low_confidence_hist,
 )
 
 # Setup paths
@@ -38,6 +41,12 @@ MODEL_DIR = BASE / "models"
 DATASET_PATH = DATA_DIR / "songs_mapped.csv"  # Nadine's fixed dataset
 MODEL_PATH = MODEL_DIR / "new_song_mood_model.joblib"  # Audio model from train_from_mapped.py
 OUTPUT_PATH = DATA_DIR / "songs_with_predictions.csv"  # Output with both predictions
+
+# Uncertainty thresholds (tunable)
+AUDIO_LOW_CONF_THRESHOLD = 0.6
+# “Borderline” = top1 and top2 are closer than this margin
+AUDIO_BORDERLINE_MARGIN = 0.15
+LYRICS_LOW_CONF_THRESHOLD = 0.6
 
 
 def load_audio_model(model_path):
@@ -62,14 +71,19 @@ def load_audio_model(model_path):
 
 def get_audio_predictions(df, model_data):
     """
-    Get predictions from the audio model.
+    Get predictions and uncertainty information from the audio model.
     
     Args:
         df: DataFrame with audio features
         model_data: Loaded model data (pipeline + features)
     
     Returns:
-        List of predictions
+        Dict with:
+            - 'predictions': main predicted label
+            - 'confidence': max class probability
+            - 'second_choice': 2nd best label
+            - 'second_confidence': probability of 2nd best label
+            - 'margin': difference between top1 and top2 probabilities
     """
     print("\nGetting audio predictions...")
     
@@ -101,11 +115,32 @@ def get_audio_predictions(df, model_data):
     # Reorder columns to match model's expected order
     X = X[feature_names]
     
-    # Get predictions
+    # Get predictions and probabilities for uncertainty estimation
     try:
+        # Predicted labels
         predictions = pipeline.predict(X)
+        # Class probabilities
+        proba = pipeline.predict_proba(X)
+        classes = pipeline.classes_
+
+        # Sort indices by probability (ascending), then take top-1 and top-2
+        sorted_idx = np.argsort(proba, axis=1)
+        top1_idx = sorted_idx[:, -1]
+        top2_idx = sorted_idx[:, -2]
+
+        max_conf = proba[np.arange(len(proba)), top1_idx]
+        second_conf = proba[np.arange(len(proba)), top2_idx]
+        margin = max_conf - second_conf
+        second_labels = classes[top2_idx]
+
         print(f"Got {len(predictions)} audio predictions")
-        return predictions
+        return {
+            "predictions": predictions,
+            "confidence": max_conf,
+            "second_choice": second_labels,
+            "second_confidence": second_conf,
+            "margin": margin,
+        }
     except Exception as e:
         print(f"ERROR getting predictions: {e}")
         return None
@@ -204,15 +239,29 @@ def main():
         print("Please run train_from_mapped.py first to train the model.")
         return
     
-    audio_predictions = get_audio_predictions(df, model_data)
+    audio_info = get_audio_predictions(df, model_data)
     
-    if audio_predictions is None:
+    if audio_info is None:
         print("ERROR: Could not get audio predictions.")
         return
     
-    # Add audio predictions to dataframe
-    df['audio_prediction'] = audio_predictions
-    print("Audio predictions added to dataset")
+    # Add audio predictions and uncertainty metrics to dataframe
+    df['audio_prediction'] = audio_info["predictions"]
+    df['audio_confidence'] = audio_info["confidence"]
+    df['audio_second_choice'] = audio_info["second_choice"]
+    df['audio_second_confidence'] = audio_info["second_confidence"]
+    df['audio_margin'] = audio_info["margin"]
+    # Low-confidence flag based on threshold
+    df['audio_low_confidence'] = df['audio_confidence'] < AUDIO_LOW_CONF_THRESHOLD
+    # Borderline flag: top1 and top2 are close in probability
+    df['audio_borderline'] = df['audio_margin'] < AUDIO_BORDERLINE_MARGIN
+    # Human-readable top-2 combo for borderline cases
+    df['audio_top2_combo'] = df.apply(
+        lambda row: f"{row['audio_prediction']}|{row['audio_second_choice']}"
+        if row['audio_borderline'] else row['audio_prediction'],
+        axis=1,
+    )
+    print("Audio predictions and uncertainty metrics added to dataset")
     print()
     
     # Step 3: Get lyrics predictions using FREE VADER
@@ -226,6 +275,12 @@ def main():
     if df_with_lyrics is None:
         print("ERROR: Could not get lyrics predictions.")
         return
+    
+    # Low-confidence flag for lyrics side (if confidence is available)
+    if 'lyrics_confidence' in df_with_lyrics.columns:
+        df_with_lyrics['lyrics_low_confidence'] = (
+            df_with_lyrics['lyrics_confidence'] < LYRICS_LOW_CONF_THRESHOLD
+        )
     
     # Step 4: Compare predictions
     print("\nStep 4: Comparing predictions...")
@@ -253,6 +308,22 @@ def main():
     plot_lyrics_confidence_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_distribution.png"))
     plot_audio_confidence_by_mood(save_path=str(BASE / "figures" / "audio_confidence_by_mood.png"))
     plot_lyrics_confidence_by_mood(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_by_mood.png"))
+    # Uncertainty-focused plots (4.c)
+    print("  - Uncertainty visualizations (4c)...")
+    plot_low_confidence_by_mood(
+        df_with_lyrics,
+        save_path=str(BASE / "figures" / "uncertainty_by_mood.png"),
+    )
+    plot_low_confidence_hist(
+        df_with_lyrics,
+        model='audio',
+        save_path=str(BASE / "figures" / "audio_low_conf_hist.png"),
+    )
+    plot_low_confidence_hist(
+        df_with_lyrics,
+        model='lyrics',
+        save_path=str(BASE / "figures" / "lyrics_low_conf_hist.png"),
+    )
     
     print("  - Mood maps (3b)...")
     print("    * PCA (fast)...")
