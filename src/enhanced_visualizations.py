@@ -29,10 +29,12 @@ except ImportError:
 sys.path.append(str(Path(__file__).parent))
 from audio_data import load_audio_data, TARGETS, FEATURE_WISHLIST
 
-FIG_DIR = Path("figures")
+# Resolve paths relative to project root (parent of src directory)
+BASE = Path(__file__).resolve().parents[1]
+FIG_DIR = BASE / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-MODEL_PATH = Path("models/new_song_mood_model.joblib")
+MODEL_PATH = BASE / "models" / "new_song_mood_model.joblib"
 
 
 # 3a. Confidence distributions - separate files

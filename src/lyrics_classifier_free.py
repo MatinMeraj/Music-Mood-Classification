@@ -60,7 +60,8 @@ class FreeLyricsClassifier:
         elif compound > 0.1:
             # Slightly positive = chill
             mood = 'chill'
-            confidence = abs(compound)
+            # Boost confidence: chill is a valid mood, not just uncertainty
+            confidence = 0.5 + (compound - 0.1) * 0.625  # Scale to 0.5-0.75 range
         elif compound < -0.5:
             # Very negative = sad
             mood = 'sad'
@@ -69,13 +70,15 @@ class FreeLyricsClassifier:
             # Slightly negative = could be sad or chill
             if abs(compound) > 0.3:
                 mood = 'sad'
+                confidence = abs(compound)
             else:
                 mood = 'chill'
-            confidence = abs(compound)
+                # Boost confidence for near-neutral chill
+                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  # Scale to 0.55-0.7 range
         else:
             # Neutral = chill
             mood = 'chill'
-            confidence = 0.5
+            confidence = 0.65  # Neutral songs are confidently "chill"
         
         # Check for "hyped" keywords (energy-related words)
         lyrics_lower = str(lyrics).lower()

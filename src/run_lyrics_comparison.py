@@ -43,10 +43,15 @@ MODEL_PATH = MODEL_DIR / "new_song_mood_model.joblib"  # Audio model from train_
 OUTPUT_PATH = DATA_DIR / "songs_with_predictions.csv"  # Output with both predictions
 
 # Uncertainty thresholds (tunable)
-AUDIO_LOW_CONF_THRESHOLD = 0.6
-# “Borderline” = top1 and top2 are closer than this margin
+# Based on analysis: mean confidence is ~0.403, median is ~0.402
+# Threshold at 0.35 flags ~25% of predictions as low-confidence (those below 25th percentile)
+AUDIO_LOW_CONF_THRESHOLD = 0.35  # Adjusted to match actual confidence distribution
+# "Borderline" = top1 and top2 are closer than this margin
 AUDIO_BORDERLINE_MARGIN = 0.15
-LYRICS_LOW_CONF_THRESHOLD = 0.6
+LYRICS_LOW_CONF_THRESHOLD = 0.6  # Lyrics model has higher confidence, this threshold is appropriate
+
+# TEST MODE: Set to a number to limit dataset size for quick testing (None = use all data)
+TEST_MAX_SONGS = 5000  # Change to None when ready for full run
 
 
 def load_audio_model(model_path):
@@ -225,8 +230,14 @@ def main():
         print("You may need to download it from Google Drive (as mentioned by Nadine).")
         return
     
-    df = pd.read_csv(DATASET_PATH)
-    print(f"✓ Loaded {len(df)} songs from dataset")
+    # TEST MODE: Only read first N rows for quick testing
+    if TEST_MAX_SONGS is not None:
+        print(f"⚠️  TEST MODE: Loading only first {TEST_MAX_SONGS} songs...")
+        df = pd.read_csv(DATASET_PATH, nrows=TEST_MAX_SONGS)
+        print(f"✓ Loaded {len(df)} songs from dataset (TEST MODE)")
+    else:
+        df = pd.read_csv(DATASET_PATH)
+        print(f"✓ Loaded {len(df)} songs from dataset")
     print(f"Columns: {list(df.columns)}")
     print()
     
@@ -270,7 +281,7 @@ def main():
     print("Processing all songs with lyrics...")
     print()
     
-    df_with_lyrics = get_lyrics_predictions(df, max_songs=None)  # Process all songs
+    df_with_lyrics = get_lyrics_predictions(df, max_songs=TEST_MAX_SONGS)  # Use TEST_MAX_SONGS if set
     
     if df_with_lyrics is None:
         print("ERROR: Could not get lyrics predictions.")
