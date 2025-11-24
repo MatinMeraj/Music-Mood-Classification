@@ -3,18 +3,25 @@ from pathlib import Path
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-# Resolve path relative to project root (parent of src directory)
+
 BASE = Path(__file__).resolve().parents[1]
 PROCESSED = BASE / "data" / "processed" / "songs_mapped.csv"
 RANDOM_STATE = 42
 
+#limiting the number of songs per mood from the dataset to 5000 (semantically)
+#so in total there are 20k 
+MAX_PER_CLASS = 5000
+
+#global variable of the target
 TARGETS = ["happy", "chill", "sad", "hyped"]
+#features to decide the mood
 FEATURE_WISHLIST = [
     "tempo","energy","valence","loudness",
     "danceability","speechiness","acousticness",
     "instrumentalness","liveness"
 ]
 
+#cleaning up the strings of loudness
 def clean_loudness(series: pd.Series) -> pd.Series:
     s = series.astype(str).str.strip()
     s = s.str.replace("\u2212", "-", regex=False)
@@ -60,19 +67,47 @@ def normalize_features(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def balanced_downsample(df: pd.DataFrame,
+                        label_col: str = "mood",
+                        max_per_class: int = None,
+                        random_state: int = RANDOM_STATE) -> pd.DataFrame:
+    """
+    Downsample each mood class to at most max_per_class rows,
+    keeping the class distribution roughly balanced.
+    """
+    if max_per_class is None:
+        return df
+
+    def _sample_group(g: pd.DataFrame) -> pd.DataFrame:
+        if len(g) <= max_per_class:
+            return g
+        return g.sample(n=max_per_class, random_state=random_state)
+
+    return (
+        df.groupby(label_col, group_keys=False)
+          .apply(_sample_group)
+          .reset_index(drop=True)
+    )
+
 def load_audio_data():
     if not PROCESSED.exists():
-        raise FileNotFoundError(f"Mapped file not found: {PROCESSED}. Run your map_labels.py first.")
+        raise FileNotFoundError(f"Mapped file not found: {PROCESSED}.")
 
     df = pd.read_csv(PROCESSED)
     df = normalize_features(df)
 
     if "mood" not in df.columns:
-        raise ValueError("Expected 'mood' column in mapped CSV.")
+        raise ValueError("Expecting the mood column in the mapped CSV.")
 
+    #keep only target moods
     df = df[df["mood"].isin(TARGETS)].copy()
     if df.empty:
-        raise ValueError("After filtering to TARGETS, no rows remain. Check your mapping step.")
+        raise ValueError("After filtering to TARGETS, no rows remain.")
+
+    #downsample to reduce dataset size but keep mood distribution
+    df = balanced_downsample(df, label_col="mood", max_per_class=MAX_PER_CLASS, random_state=RANDOM_STATE)
+    if df.empty:
+        raise ValueError("Dataframe is empty")
 
     have = [c for c in FEATURE_WISHLIST if c in df.columns]
     if not have:
@@ -84,19 +119,33 @@ def load_audio_data():
     for c in have:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    # drop all-NaN features
+    #drop all NA features
     all_nan_feats = [c for c in have if df[c].isna().all()]
     if all_nan_feats:
         df = df.drop(columns=all_nan_feats)
         have = [c for c in have if c not in all_nan_feats]
         if not have:
-            raise ValueError("All candidate features were all-NaN after coercion.")
+            raise ValueError("all features are NAs")
 
     X = df[have]
     y = df["mood"].astype(str)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, stratify=y, random_state=RANDOM_STATE
+    #train 70%, validate 20%, test 10%
+    #set the test to 0.1
+    X_temp, X_test, y_temp, y_test = train_test_split(
+        X, y,
+        test_size=0.10,
+        stratify=y,
+        random_state=RANDOM_STATE
     )
 
-    return X_train, X_test, y_train, y_test, have
+    #remaining 0.9 goes to train and val
+    # So cv fraction of the remaining is (0.20 / 0.90) = 2/9
+    X_train, X_cv, y_train, y_cv = train_test_split(
+        X_temp, y_temp,
+        test_size=2/9,
+        stratify=y_temp,
+        random_state=RANDOM_STATE
+    )
+
+    return X_train, X_cv, X_test, y_train, y_cv, y_test, have
