@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 
 BASE = Path(__file__).resolve().parents[1]
 PROCESSED = BASE / "data" / "processed" / "songs_mapped.csv"
+BALANCED_PATH = BASE / "data" / "processed" / "songs_mapped_20k_balanced.csv"
 RANDOM_STATE = 42
 
 #limiting the number of songs per mood from the dataset to 5000 (semantically)
@@ -99,15 +100,20 @@ def load_audio_data():
     if "mood" not in df.columns:
         raise ValueError("Expecting the mood column in the mapped CSV.")
 
-    #keep only target moods
+    # keep only target moods
     df = df[df["mood"].isin(TARGETS)].copy()
     if df.empty:
         raise ValueError("After filtering to TARGETS, no rows remain.")
 
-    #downsample to reduce dataset size but keep mood distribution
+    # downsample to reduce dataset size but keep mood distribution
     df = balanced_downsample(df, label_col="mood", max_per_class=MAX_PER_CLASS, random_state=RANDOM_STATE)
     if df.empty:
         raise ValueError("Dataframe is empty")
+
+    #save the dataset into a new file
+    if not BALANCED_PATH.exists():
+        df.to_csv(BALANCED_PATH, index=False)
+        print(f"Saved balanced dataset ({len(df)} rows) to {BALANCED_PATH}")
 
     have = [c for c in FEATURE_WISHLIST if c in df.columns]
     if not have:
@@ -119,7 +125,7 @@ def load_audio_data():
     for c in have:
         df[c] = pd.to_numeric(df[c], errors="coerce")
 
-    #drop all NA features
+    # drop all NA features
     all_nan_feats = [c for c in have if df[c].isna().all()]
     if all_nan_feats:
         df = df.drop(columns=all_nan_feats)
@@ -130,8 +136,7 @@ def load_audio_data():
     X = df[have]
     y = df["mood"].astype(str)
 
-    #train 70%, validate 20%, test 10%
-    #set the test to 0.1
+    # train 70%, validate 20%, test 10%
     X_temp, X_test, y_temp, y_test = train_test_split(
         X, y,
         test_size=0.10,
@@ -139,8 +144,7 @@ def load_audio_data():
         random_state=RANDOM_STATE
     )
 
-    #remaining 0.9 goes to train and val
-    # So cv fraction of the remaining is (0.20 / 0.90) = 2/9
+    # remaining 0.9 goes to train and val: 2/9 =  0.222 for cv
     X_train, X_cv, y_train, y_cv = train_test_split(
         X_temp, y_temp,
         test_size=2/9,
@@ -149,3 +153,4 @@ def load_audio_data():
     )
 
     return X_train, X_cv, X_test, y_train, y_cv, y_test, have
+

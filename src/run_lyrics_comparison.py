@@ -38,7 +38,8 @@ DATA_DIR = BASE / "data" / "processed"
 MODEL_DIR = BASE / "models"
 
 # File paths
-DATASET_PATH = DATA_DIR / "songs_mapped.csv"  # Nadine's fixed dataset
+#DATASET_PATH = DATA_DIR / "songs_mapped.csv"  # Nadine's fixed dataset
+DATASET_PATH = DATA_DIR / "songs_mapped_20k_balanced.csv"
 MODEL_PATH = MODEL_DIR / "new_song_mood_model.joblib"  # Audio model from train_from_mapped.py
 OUTPUT_PATH = DATA_DIR / "songs_with_predictions.csv"  # Output with both predictions
 
@@ -51,7 +52,7 @@ AUDIO_BORDERLINE_MARGIN = 0.15
 LYRICS_LOW_CONF_THRESHOLD = 0.6  # Lyrics model has higher confidence, this threshold is appropriate
 
 # TEST MODE: Set to a number to limit dataset size for quick testing (None = use all data)
-TEST_MAX_SONGS = 5000  # Change to None when ready for full run
+TEST_MAX_SONGS = None  # Change to None when ready for full run
 
 
 def load_audio_model(model_path):

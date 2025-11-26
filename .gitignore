@@ -65,4 +65,4 @@ yarn-error.log*
 .next/
 out/
 build/
-dist/
+dist/.venv/

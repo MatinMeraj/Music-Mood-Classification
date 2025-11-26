@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 """
 Small demo for CMPT 310 Project
-Audio (+ optional lyrics) mood prediction on 1–2 demo songs.
+Audio (+ optional lyrics) mood prediction on a few *holdout* songs.
+
+- Loads the trained audio model (20k balanced dataset).
+- Samples songs from songs_mapped.csv that were NOT used in the 20k-balanced CSV.
+- Runs audio (and optional lyrics) mood predictions on these holdout songs.
 
 Usage:
     python src/demo.py
@@ -10,25 +14,43 @@ Usage:
 import math
 import joblib
 import pandas as pd
+from pathlib import Path
 
-# Set this to False if you DON'T want to demo lyrics
+# Toggle lyrics demo on/off
 USE_LYRICS = True
-
 if USE_LYRICS:
     from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
+# -------------------------------------------------------------------
+# IMPORT DATA UTILS (from audio_data.py)
+# -------------------------------------------------------------------
+import audio_data  # your existing module
+from audio_data import normalize_features, TARGETS
 
-# ---------------------------------------------------------
+# Full mapped dataset (500k)
+FULL_DATA_PATH = audio_data.PROCESSED
+
+# Balanced 20k dataset (we saved this earlier in audio_data)
+BALANCED_PATH = getattr(
+    audio_data,
+    "BALANCED_PATH",
+    FULL_DATA_PATH.parent / "songs_mapped_20k_balanced.csv",
+)
+
+# -------------------------------------------------------------------
 # CONFIG
-# ---------------------------------------------------------
+# -------------------------------------------------------------------
+
+# Base path (project root: parent of src/)
+BASE = Path(__file__).resolve().parents[1]
 
 # Path to your trained audio model pipeline (.joblib)
-AUDIO_MODEL_PATH = "models/new_song_mood_model.joblib"
+AUDIO_MODEL_PATH = BASE / "models" / "new_song_mood_model.joblib"
 
 # Fallback label order (only used if we can't recover true label names)
 MOOD_LABELS = ["happy", "chill", "sad", "hyped"]
 
-# Base audio features we manually provide per demo song
+# Base audio features we expect in the dataset
 BASE_AUDIO_KEYS = [
     "tempo",
     "energy",
@@ -38,70 +60,19 @@ BASE_AUDIO_KEYS = [
     "acousticness",
     "instrumentalness",
     "liveness",
-    "loudness",  # OK to have extra; we won't pass it if model doesn't use it
+    "loudness",
 ]
 
-# Will be filled dynamically after loading the model
+# Dynamically filled after loading the model
 FEATURE_NAMES_FOR_MODEL = None
 LABEL_NAMES_FROM_JOBLIB = None
 
 
-# ---------------------------------------------------------
-# DEMO SONGS
-# (You can replace these with real rows from your dataset)
-# ---------------------------------------------------------
+# -------------------------------------------------------------------
+# MODEL LOADING
+# -------------------------------------------------------------------
 
-DEMO_SONGS = [
-    {
-        "id": "demo_song_1",
-        "title": "Bright Morning",
-        "audio_features": {
-            "tempo": 124.0,
-            "energy": 0.78,
-            "valence": 0.82,
-            "loudness": -5.2,
-            "danceability": 0.73,
-            "speechiness": 0.05,
-            "acousticness": 0.12,
-            "instrumentalness": 0.0,
-            "liveness": 0.15,
-        },
-        "lyrics": """
-        Woke up to the sunlight on my face,
-        Every little worry slowly fades away,
-        Holding on to this feeling, I’m alive,
-        Nothing’s gonna break my stride tonight.
-        """,
-    },
-    {
-        "id": "demo_song_2",
-        "title": "Midnight City Rain",
-        "audio_features": {
-            "tempo": 95.0,
-            "energy": 0.38,
-            "valence": 0.25,
-            "loudness": -9.5,
-            "danceability": 0.48,
-            "speechiness": 0.04,
-            "acousticness": 0.42,
-            "instrumentalness": 0.0,
-            "liveness": 0.11,
-        },
-        "lyrics": """
-        Streetlights flicker on the empty road,
-        Echoes of a memory I used to know,
-        Walking through the city in the pouring rain,
-        Every step is heavy with a quiet pain.
-        """,
-    },
-]
-
-
-# ---------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------
-
-def load_audio_model(path: str):
+def load_audio_model(path: Path):
     """
     Load the audio model from joblib and pick up feature names + label names.
     """
@@ -164,24 +135,15 @@ def load_audio_model(path: str):
     )
 
 
+# -------------------------------------------------------------------
+# FEATURE ENGINEERING FOR ONE SONG
+# -------------------------------------------------------------------
+
 def build_feature_row_for_model(base_features: dict) -> dict:
     """
-    Given base raw features (tempo, energy, valence, danceability, etc.),
-    build a single-row feature dict that matches exactly the feature names
-    used during training (FEATURE_NAMES_FOR_MODEL).
-
-    This is where we recompute engineered features like:
-      - dance_over_tempo
-      - energy_dance
-      - energy_over_acoustic
-      - energy_sq
-      - energy_valence
-      - valence_dance
-      - speech_energy
-      - tempo_sq
-      - valence_sq
-
-    Anything unknown will be set to NaN and handled by SimpleImputer.
+    Given base raw features (tempo, energy, valence, etc.),
+    build a single-row feature dict that matches exactly the
+    feature names used during training (FEATURE_NAMES_FOR_MODEL).
     """
     if FEATURE_NAMES_FOR_MODEL is None:
         # Simple path: just pass through whatever base features we have.
@@ -207,7 +169,6 @@ def build_feature_row_for_model(base_features: dict) -> dict:
 
     for fname in FEATURE_NAMES_FOR_MODEL:
         if fname in base_features:
-            # Directly provided feature (tempo, energy, etc.)
             row[fname] = base_features[fname]
         elif fname == "dance_over_tempo":
             row[fname] = dance / (tempo + eps)
@@ -228,18 +189,17 @@ def build_feature_row_for_model(base_features: dict) -> dict:
         elif fname == "valence_sq":
             row[fname] = valence ** 2
         else:
-            # For any other feature the model expects, fill NaN;
-            # the pipeline's SimpleImputer will handle it.
-            row[fname] = math.nan
+            row[fname] = math.nan  # let SimpleImputer handle this
 
     return row
 
 
+# -------------------------------------------------------------------
+# LYRICS → MOOD (VADER)
+# -------------------------------------------------------------------
+
 def map_compound_to_mood(compound: float) -> str:
-    """
-    Simple heuristic to map VADER compound score to 4 moods.
-    Replace this with your actual mapping if you had a more complex one.
-    """
+    """Map VADER compound score to 4 moods."""
     if compound <= -0.3:
         return "sad"
     elif compound < 0.1:
@@ -251,11 +211,6 @@ def map_compound_to_mood(compound: float) -> str:
 
 
 def predict_audio_mood(model, audio_features: dict):
-    """
-    Build the proper feature row, run the model, and decode the label
-    using label_encoder_classes (if present) or model.classes_.
-    """
-    # Build features DataFrame exactly matching training
     feat_row = build_feature_row_for_model(audio_features)
     df = pd.DataFrame([feat_row])
 
@@ -273,7 +228,6 @@ def predict_audio_mood(model, audio_features: dict):
                 label_names = list(model.classes_)
                 predicted_mood = label_names[pred_idx]
             else:
-                # final fallback: numeric -> use MOOD_LABELS
                 label_names = MOOD_LABELS
                 predicted_mood = label_names[pred_idx]
 
@@ -291,6 +245,86 @@ def predict_lyrics_mood(analyzer, lyrics: str):
     mood = map_compound_to_mood(compound)
     return mood, compound, scores
 
+
+# -------------------------------------------------------------------
+# PICK HOLDOUT SONGS (full 500k minus 20k balanced)
+# -------------------------------------------------------------------
+
+def build_key(df: pd.DataFrame) -> pd.Series:
+    """Key to match songs: prefer track_name + artists."""
+    cols = set(df.columns)
+    if {"track_name", "artists"} <= cols:
+        return df["track_name"].astype(str) + " || " + df["artists"].astype(str)
+    elif "track_name" in cols:
+        return df["track_name"].astype(str)
+    elif "id" in cols:
+        return df["id"].astype(str)
+    else:
+        return df.index.astype(str)
+
+
+def load_holdout_demo_songs(n: int = 2):
+    """
+    Pick n songs from songs_mapped.csv that were NOT used in the 20k balanced file.
+    Returns a list of dicts with id, title, audio_features, lyrics.
+    """
+    print(f"[INFO] Loading full dataset from: {FULL_DATA_PATH}")
+    full = pd.read_csv(FULL_DATA_PATH)
+    full = normalize_features(full)
+
+    print(f"[INFO] Loading balanced 20k dataset from: {BALANCED_PATH}")
+    balanced = pd.read_csv(BALANCED_PATH)
+    balanced = normalize_features(balanced)
+
+    # Filter to target moods only (optional but clean)
+    if "mood" in full.columns:
+        full = full[full["mood"].isin(TARGETS)].copy()
+
+    # Identify holdout songs = full - balanced
+    full["_key"] = build_key(full)
+    balanced["_key"] = build_key(balanced)
+
+    holdout = full[~full["_key"].isin(balanced["_key"])].copy()
+    print(f"[INFO] Holdout pool size (full - balanced): {len(holdout)} rows")
+
+    if holdout.empty:
+        print("[WARN] Holdout set is empty – falling back to random rows from full dataset.")
+        holdout = full.copy()
+
+    # Find lyrics column if present
+    lyrics_col = None
+    for cand in ["text", "lyrics", "Lyrics"]:
+        if cand in holdout.columns:
+            lyrics_col = cand
+            break
+
+    if lyrics_col is None and USE_LYRICS:
+        print("[WARN] No lyrics column found; demo will run audio-only.")
+
+    # Sample n songs
+    n_sample = min(n, len(holdout))
+    demo_rows = holdout.sample(n=n_sample, random_state=42)
+
+    demo_songs = []
+    for _, row in demo_rows.iterrows():
+        audio_features = {}
+        for key in BASE_AUDIO_KEYS:
+            if key in row.index:
+                audio_features[key] = row[key]
+
+        demo_songs.append({
+            "id": row.get("track_id", row.get("id", "unknown")),
+            "title": row.get("track_name", "Unknown title"),
+            "audio_features": audio_features,
+            "lyrics": row[lyrics_col] if lyrics_col is not None else "",
+        })
+
+    return demo_songs
+
+
+# -------------------------------------------------------------------
+# PRETTY PRINTING
+# -------------------------------------------------------------------
 
 def print_demo_result(song, audio_pred, lyrics_pred=None):
     audio_mood, audio_conf, audio_probs = audio_pred
@@ -314,8 +348,8 @@ def print_demo_result(song, audio_pred, lyrics_pred=None):
     if USE_LYRICS and lyrics_pred is not None:
         lyrics_mood, compound, scores = lyrics_pred
         print("\nLyrics model (VADER):")
-        print(f"Predicted mood: {lyrics_mood}  (compound = {compound:.3f})")
-        print(f"Sentiment scores: {scores}")
+        print(f"  → Predicted mood: {lyrics_mood}  (compound = {compound:.3f})")
+        print(f"  Sentiment scores: {scores}")
 
         agreement = "Agree" if audio_mood == lyrics_mood else "Disagree"
         print(f"\nOverall: Audio vs Lyrics = {agreement}")
@@ -323,9 +357,9 @@ def print_demo_result(song, audio_pred, lyrics_pred=None):
     print("=" * 70 + "\n")
 
 
-# ---------------------------------------------------------
+# -------------------------------------------------------------------
 # MAIN
-# ---------------------------------------------------------
+# -------------------------------------------------------------------
 
 def main():
     audio_model = load_audio_model(AUDIO_MODEL_PATH)
@@ -335,11 +369,13 @@ def main():
     else:
         vader = None
 
-    print("Running demo on two songs\n")
+    print("Running demo on holdout songs (not used in 20k balanced train/eval)\n")
 
-    for song in DEMO_SONGS:
+    demo_songs = load_holdout_demo_songs(n=2)
+
+    for song in demo_songs:
         audio_pred = predict_audio_mood(audio_model, song["audio_features"])
-        if USE_LYRICS:
+        if USE_LYRICS and song.get("lyrics"):
             lyrics_pred = predict_lyrics_mood(vader, song["lyrics"])
         else:
             lyrics_pred = None
