@@ -1,53 +1,39 @@
-#!/usr/bin/env python
-"""
-Small demo for CMPT 310 Project
-Audio (+ optional lyrics) mood prediction on a few *holdout* songs.
-
-- Loads the trained audio model (20k balanced dataset).
-- Samples songs from songs_mapped.csv that were NOT used in the 20k-balanced CSV.
-- Runs audio (and optional lyrics) mood predictions on these holdout songs.
-
-Usage:
-    python src/demo.py
-"""
-
 import math
 import joblib
 import pandas as pd
 from pathlib import Path
 
-# Toggle lyrics demo on/off
 USE_LYRICS = True
 if USE_LYRICS:
     from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-# -------------------------------------------------------------------
-# IMPORT DATA UTILS (from audio_data.py)
-# -------------------------------------------------------------------
+
+# IMPORT DATA UTILS 
+
 import audio_data  # your existing module
 from audio_data import normalize_features, TARGETS
 
 # Full mapped dataset (500k)
 FULL_DATA_PATH = audio_data.PROCESSED
 
-# Balanced 20k dataset (we saved this earlier in audio_data)
+# Balanced 20k dataset 
 BALANCED_PATH = getattr(
     audio_data,
     "BALANCED_PATH",
     FULL_DATA_PATH.parent / "songs_mapped_20k_balanced.csv",
 )
 
-# -------------------------------------------------------------------
-# CONFIG
-# -------------------------------------------------------------------
 
-# Base path (project root: parent of src/)
+# CONFIG
+
+
+# Base path
 BASE = Path(__file__).resolve().parents[1]
 
-# Path to your trained audio model pipeline (.joblib)
+# Path to trained audio model pipeline 
 AUDIO_MODEL_PATH = BASE / "models" / "new_song_mood_model.joblib"
 
-# Fallback label order (only used if we can't recover true label names)
+# Fallback label order 
 MOOD_LABELS = ["happy", "chill", "sad", "hyped"]
 
 # Base audio features we expect in the dataset
@@ -68,9 +54,8 @@ FEATURE_NAMES_FOR_MODEL = None
 LABEL_NAMES_FROM_JOBLIB = None
 
 
-# -------------------------------------------------------------------
 # MODEL LOADING
-# -------------------------------------------------------------------
+
 
 def load_audio_model(path: Path):
     """
@@ -135,18 +120,11 @@ def load_audio_model(path: Path):
     )
 
 
-# -------------------------------------------------------------------
 # FEATURE ENGINEERING FOR ONE SONG
-# -------------------------------------------------------------------
+
 
 def build_feature_row_for_model(base_features: dict) -> dict:
-    """
-    Given base raw features (tempo, energy, valence, etc.),
-    build a single-row feature dict that matches exactly the
-    feature names used during training (FEATURE_NAMES_FOR_MODEL).
-    """
     if FEATURE_NAMES_FOR_MODEL is None:
-        # Simple path: just pass through whatever base features we have.
         row = {}
         for k in BASE_AUDIO_KEYS:
             if k in base_features:
@@ -194,12 +172,10 @@ def build_feature_row_for_model(base_features: dict) -> dict:
     return row
 
 
-# -------------------------------------------------------------------
-# LYRICS → MOOD (VADER)
-# -------------------------------------------------------------------
+
+# LYRICS to  MOOD w vader
 
 def map_compound_to_mood(compound: float) -> str:
-    """Map VADER compound score to 4 moods."""
     if compound <= -0.3:
         return "sad"
     elif compound < 0.1:
@@ -246,12 +222,11 @@ def predict_lyrics_mood(analyzer, lyrics: str):
     return mood, compound, scores
 
 
-# -------------------------------------------------------------------
-# PICK HOLDOUT SONGS (full 500k minus 20k balanced)
-# -------------------------------------------------------------------
+# PICK HOLDOUT SONGS 
+
 
 def build_key(df: pd.DataFrame) -> pd.Series:
-    """Key to match songs: prefer track_name + artists."""
+
     cols = set(df.columns)
     if {"track_name", "artists"} <= cols:
         return df["track_name"].astype(str) + " || " + df["artists"].astype(str)
@@ -264,10 +239,6 @@ def build_key(df: pd.DataFrame) -> pd.Series:
 
 
 def load_holdout_demo_songs(n: int = 2):
-    """
-    Pick n songs from songs_mapped.csv that were NOT used in the 20k balanced file.
-    Returns a list of dicts with id, title, audio_features, lyrics.
-    """
     print(f"[INFO] Loading full dataset from: {FULL_DATA_PATH}")
     full = pd.read_csv(FULL_DATA_PATH)
     full = normalize_features(full)
@@ -322,9 +293,6 @@ def load_holdout_demo_songs(n: int = 2):
     return demo_songs
 
 
-# -------------------------------------------------------------------
-# PRETTY PRINTING
-# -------------------------------------------------------------------
 
 def print_demo_result(song, audio_pred, lyrics_pred=None):
     audio_mood, audio_conf, audio_probs = audio_pred
@@ -356,10 +324,6 @@ def print_demo_result(song, audio_pred, lyrics_pred=None):
 
     print("=" * 70 + "\n")
 
-
-# -------------------------------------------------------------------
-# MAIN
-# -------------------------------------------------------------------
 
 def main():
     audio_model = load_audio_model(AUDIO_MODEL_PATH)

@@ -1,11 +1,3 @@
-"""
-Enhanced Visualizations for Milestone 2
-Includes:
-- 3a. Confidence bar / histogram charts (probability distribution)
-- 3b. Mood map (2D feature space visualization: PCA + optional t-SNE)
-- 3d. Enhanced audio vs lyrics comparison (side-by-side distributions & confusion matrices)
-"""
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,7 +22,6 @@ except ImportError:
 sys.path.append(str(Path(__file__).parent))
 from audio_data import load_audio_data, TARGETS, FEATURE_WISHLIST
 
-# Resolve paths relative to project root (parent of src directory)
 BASE = Path(__file__).resolve().parents[1]
 FIG_DIR = BASE / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -38,13 +29,11 @@ FIG_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_PATH = BASE / "models" / "new_song_mood_model.joblib"
 PREDICTIONS_PATH = BASE / "data" / "processed" / "songs_with_predictions.csv"
 
-MOODS = TARGETS  # ['happy', 'chill', 'sad', 'hyped']
-# -------------------------------------------------------------------
-# 3a. Confidence distributions
-# -------------------------------------------------------------------
+MOODS = TARGETS 
+
+# Confidence distributions
 
 def plot_audio_confidence_distribution(save_path=None):
-    """Audio model confidence distribution histogram (max class probability on test set)."""
     if save_path is None:
         save_path = FIG_DIR / "audio_confidence_distribution.png"
 
@@ -81,7 +70,6 @@ def plot_audio_confidence_distribution(save_path=None):
 def plot_lyrics_confidence_distribution(df,
                                         lyrics_conf_col="lyrics_confidence",
                                         save_path=None):
-    """Lyrics model confidence distribution histogram (e.g., VADER |compound|)."""
     if save_path is None:
         save_path = FIG_DIR / "lyrics_confidence_distribution.png"
 
@@ -111,7 +99,6 @@ def plot_lyrics_confidence_distribution(df,
 
 
 def plot_audio_confidence_by_mood(save_path=None):
-    """Audio model mean max-confidence grouped by predicted mood."""
     if save_path is None:
         save_path = FIG_DIR / "audio_confidence_by_mood.png"
 
@@ -162,7 +149,6 @@ def plot_lyrics_confidence_by_mood(df,
                                    lyrics_pred_col="lyrics_prediction",
                                    lyrics_conf_col="lyrics_confidence",
                                    save_path=None):
-    """Lyrics model mean confidence grouped by predicted mood."""
     if save_path is None:
         save_path = FIG_DIR / "lyrics_confidence_by_mood.png"
 
@@ -203,20 +189,10 @@ def plot_lyrics_confidence_by_mood(df,
     print(f"Saved: {save_path}")
 
 
-# -------------------------------------------------------------------
-# 3b. Mood map (PCA + optional t-SNE)
-# -------------------------------------------------------------------
+# Mood map (PCA)
+
 
 def plot_mood_map(df=None, method="tsne", n_samples=3000, save_path=None):
-    """
-    3b. Mood map - 2D visualization of songs in feature space.
-
-    Args:
-        df: Optional DataFrame with features & 'mood'. If None, uses load_audio_data().
-        method: 'tsne' or 'pca'.
-        n_samples: max number of samples for speed.
-        save_path: Path to save figure.
-    """
     if save_path is None:
         save_path = FIG_DIR / f"mood_map_{method}.png"
 
@@ -258,11 +234,10 @@ def plot_mood_map(df=None, method="tsne", n_samples=3000, save_path=None):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X_sample)
 
-        # Dimensionality reduction
         method_lower = method.lower()
         if method_lower == "tsne":
             n_points = X_scaled.shape[0]
-            # perplexity must be < n_points; keep it conservative
+            # perplexity must be < n_points
             perplexity = min(30, max(5, n_points // 100))
             n_iter = 500
             reducer = TSNE(
@@ -331,14 +306,12 @@ def plot_mood_map(df=None, method="tsne", n_samples=3000, save_path=None):
         traceback.print_exc()
 
 
-# -------------------------------------------------------------------
-# 3d. Audio vs Lyrics comparison
-# -------------------------------------------------------------------
+# Audio vs Lyrics comparison
+
 
 def plot_audio_prediction_distribution(df,
                                        audio_pred_col="audio_prediction",
                                        save_path=None):
-    """Audio model prediction class counts."""
     if save_path is None:
         save_path = FIG_DIR / "audio_prediction_distribution.png"
 
@@ -368,7 +341,6 @@ def plot_audio_prediction_distribution(df,
 def plot_lyrics_prediction_distribution(df,
                                         lyrics_pred_col="lyrics_prediction",
                                         save_path=None):
-    """Lyrics model prediction class counts."""
     if save_path is None:
         save_path = FIG_DIR / "lyrics_prediction_distribution.png"
 
@@ -399,7 +371,7 @@ def plot_audio_lyrics_agreement_pie(df,
                                     audio_pred_col="audio_prediction",
                                     lyrics_pred_col="lyrics_prediction",
                                     save_path=None):
-    """Overall audio vs lyrics agreement percentage (pie chart)."""
+    """Overall audio vs lyrics agreement percentage """
     if save_path is None:
         save_path = FIG_DIR / "audio_lyrics_agreement_pie.png"
 
@@ -438,7 +410,7 @@ def plot_audio_lyrics_distribution_comparison(df,
                                               audio_pred_col="audio_prediction",
                                               lyrics_pred_col="lyrics_prediction",
                                               save_path=None):
-    """Side-by-side bar chart: audio vs lyrics prediction counts by mood."""
+    """audio vs lyrics prediction counts by mood"""
     if save_path is None:
         save_path = FIG_DIR / "audio_lyrics_distribution_comparison.png"
 
@@ -511,7 +483,6 @@ def plot_audio_agreement_by_mood(df,
                                  audio_pred_col="audio_prediction",
                                  lyrics_pred_col="lyrics_prediction",
                                  save_path=None):
-    """Agreement % per audio-predicted mood."""
     if save_path is None:
         save_path = FIG_DIR / "audio_agreement_by_mood.png"
 
@@ -551,7 +522,6 @@ def plot_lyrics_agreement_by_mood(df,
                                   audio_pred_col="audio_prediction",
                                   lyrics_pred_col="lyrics_prediction",
                                   save_path=None):
-    """Agreement % per lyrics-predicted mood."""
     if save_path is None:
         save_path = FIG_DIR / "lyrics_agreement_by_mood.png"
 
@@ -591,7 +561,6 @@ def plot_audio_confusion_matrix_vs_true(df,
                                         audio_pred_col="audio_prediction",
                                         true_label_col="mood",
                                         save_path=None):
-    """Audio model confusion matrix vs true labels (if 'mood' column exists)."""
     if save_path is None:
         save_path = FIG_DIR / "audio_confusion_matrix_vs_true.png"
 
@@ -628,7 +597,6 @@ def plot_lyrics_confusion_matrix_vs_true(df,
                                          lyrics_pred_col="lyrics_prediction",
                                          true_label_col="mood",
                                          save_path=None):
-    """Lyrics model confusion matrix vs true labels (if 'mood' column exists)."""
     if save_path is None:
         save_path = FIG_DIR / "lyrics_confusion_matrix_vs_true.png"
 
@@ -666,10 +634,8 @@ def plot_low_confidence_by_mood(df,
                                 audio_pred_col='audio_prediction',
                                 lyrics_pred_col='lyrics_prediction',
                                 save_path=None):
-    """
-    Uncertainty plot: percentage of low-confidence predictions by mood
-    for both audio and lyrics models.
-    """
+    
+   # Uncertainty plot
     if save_path is None:
         save_path = FIG_DIR / "uncertainty_by_mood.png"
 
@@ -684,14 +650,14 @@ def plot_low_confidence_by_mood(df,
     lyrics_rates = []
 
     for mood in moods:
-        # Audio: group by audio prediction
+        # group by audio prediction
         mood_df_audio = df_clean[df_clean[audio_pred_col] == mood]
         if len(mood_df_audio) > 0:
             audio_rates.append(100.0 * mood_df_audio[audio_low_col].mean())
         else:
             audio_rates.append(0.0)
 
-        # Lyrics: group by lyrics prediction
+        # group by lyrics prediction
         mood_df_lyrics = df_clean[df_clean[lyrics_pred_col] == mood]
         if len(mood_df_lyrics) > 0:
             lyrics_rates.append(100.0 * mood_df_lyrics[lyrics_low_col].mean())
@@ -728,9 +694,6 @@ def plot_low_confidence_hist(df,
                              low_flag_audio='audio_low_confidence',
                              low_flag_lyrics='lyrics_low_confidence',
                              save_path=None):
-    """
-    Histogram of low-confidence predictions only, for audio or lyrics model.
-    """
     if model == 'audio':
         conf_col = conf_col_audio
         flag_col = low_flag_audio
@@ -795,9 +758,6 @@ def plot_lyrics_confusion_matrix_vs_true(df, lyrics_pred_col='lyrics_prediction'
     plt.close()
     print(f"Saved: {save_path}")
 
-# -------------------------------------------------------------------
-# Main
-# -------------------------------------------------------------------
 
 def main():
     """Create all Milestone 2 visualizations (one PNG per chart)."""
@@ -818,9 +778,8 @@ def main():
     print(f"Loaded {len(df)} songs")
     print()
 
-    # ---------------------------
-    # 3a. Confidence distributions
-    # ---------------------------
+    # Confidence distributions
+
     print("3a. Creating confidence distribution charts...")
     plot_audio_confidence_distribution()
     plot_lyrics_confidence_distribution(df)
@@ -828,9 +787,8 @@ def main():
     plot_lyrics_confidence_by_mood(df)
     print()
 
-    # ---------------------------
-    # 3b. Mood maps
-    # ---------------------------
+    # Mood maps
+
     print("3b. Creating mood maps...")
     print("  - PCA (fast)...")
     plot_mood_map(df=None, method="pca", n_samples=10000)
@@ -838,9 +796,9 @@ def main():
     plot_mood_map(df=None, method="tsne", n_samples=2000)
     print()
 
-    # ---------------------------
-    # 3d. Audio vs Lyrics comparisons
-    # ---------------------------
+ 
+    # Audio vs Lyrics comparisons
+
     print("3d. Creating audio vs lyrics comparison charts...")
     plot_audio_prediction_distribution(df)
     plot_lyrics_prediction_distribution(df)

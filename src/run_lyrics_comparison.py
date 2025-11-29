@@ -1,8 +1,3 @@
-"""
-Main script to run lyrics-based mood classification and compare with audio predictions
-Simple and clear implementation for Milestone 2
-"""
-
 import pandas as pd
 from pathlib import Path
 import os
@@ -10,7 +5,6 @@ import joblib
 import sys
 import numpy as np
 
-# Import our modules
 from lyrics_classifier_free import FreeLyricsClassifier
 from compare_audio_lyrics import compare_predictions, create_comparison_visualization
 from enhanced_visualizations import (
@@ -37,22 +31,18 @@ BASE = Path(__file__).resolve().parents[1]
 DATA_DIR = BASE / "data" / "processed"
 MODEL_DIR = BASE / "models"
 
-# File paths
-#DATASET_PATH = DATA_DIR / "songs_mapped.csv"  # Nadine's fixed dataset
+
 DATASET_PATH = DATA_DIR / "songs_mapped_20k_balanced.csv"
-MODEL_PATH = MODEL_DIR / "new_song_mood_model.joblib"  # Audio model from train_from_mapped.py
-OUTPUT_PATH = DATA_DIR / "songs_with_predictions.csv"  # Output with both predictions
+MODEL_PATH = MODEL_DIR / "new_song_mood_model.joblib" 
+OUTPUT_PATH = DATA_DIR / "songs_with_predictions.csv"  
 
-# Uncertainty thresholds (tunable)
-# Based on analysis: mean confidence is ~0.403, median is ~0.402
-# Threshold at 0.35 flags ~25% of predictions as low-confidence (those below 25th percentile)
-AUDIO_LOW_CONF_THRESHOLD = 0.35  # Adjusted to match actual confidence distribution
-# "Borderline" = top1 and top2 are closer than this margin
+
+AUDIO_LOW_CONF_THRESHOLD = 0.35  
 AUDIO_BORDERLINE_MARGIN = 0.15
-LYRICS_LOW_CONF_THRESHOLD = 0.6  # Lyrics model has higher confidence, this threshold is appropriate
+LYRICS_LOW_CONF_THRESHOLD = 0.6  
 
-# TEST MODE: Set to a number to limit dataset size for quick testing (None = use all data)
-TEST_MAX_SONGS = None  # Change to None when ready for full run
+
+TEST_MAX_SONGS = None 
 
 
 def load_audio_model(model_path):
@@ -76,28 +66,13 @@ def load_audio_model(model_path):
 
 
 def get_audio_predictions(df, model_data):
-    """
-    Get predictions and uncertainty information from the audio model.
     
-    Args:
-        df: DataFrame with audio features
-        model_data: Loaded model data (pipeline + features)
-    
-    Returns:
-        Dict with:
-            - 'predictions': main predicted label
-            - 'confidence': max class probability
-            - 'second_choice': 2nd best label
-            - 'second_confidence': probability of 2nd best label
-            - 'margin': difference between top1 and top2 probabilities
-    """
     print("\nGetting audio predictions...")
     
     # Get the pipeline and feature names
     pipeline = model_data['pipeline']
     feature_names = model_data['features']
     
-    # Check if we have the required features
     missing_features = [f for f in feature_names if f not in df.columns]
     if missing_features:
         print(f"WARNING: Missing features: {missing_features}")
@@ -110,26 +85,26 @@ def get_audio_predictions(df, model_data):
         print("ERROR: No required features found in dataset!")
         return None
     
-    # Prepare features
+
     X = df[available_features].copy()
     
-    # Fill missing features with 0 (or you can use median/mean)
+    # Fill missing features with 0 
     for feature in feature_names:
         if feature not in X.columns:
-            X[feature] = 0  # Simple fallback
+            X[feature] = 0 
     
-    # Reorder columns to match model's expected order
+  
     X = X[feature_names]
     
     # Get predictions and probabilities for uncertainty estimation
     try:
-        # Predicted labels
+      
         predictions = pipeline.predict(X)
-        # Class probabilities
+        
         proba = pipeline.predict_proba(X)
         classes = pipeline.classes_
 
-        # Sort indices by probability (ascending), then take top-1 and top-2
+    
         sorted_idx = np.argsort(proba, axis=1)
         top1_idx = sorted_idx[:, -1]
         top2_idx = sorted_idx[:, -2]
@@ -153,21 +128,9 @@ def get_audio_predictions(df, model_data):
 
 
 def get_lyrics_predictions(df, max_songs=None):
-    """
-    Get predictions from the FREE lyrics classifier (VADER).
-    
-    Args:
-        df: DataFrame with lyrics
-        max_songs: Maximum number of songs to classify (None = all songs)
-                   VADER is free and fast, so we can process all songs!
-    
-    Returns:
-        DataFrame with lyrics predictions added
-    """
     print("\nGetting lyrics predictions using VADER (FREE)...")
     
-    # Check if lyrics column exists
-    lyrics_column = 'text'  # Common column name for lyrics
+    lyrics_column = 'text'  
     if lyrics_column not in df.columns:
         # Try other possible column names
         possible_names = ['lyrics', 'Lyrics', 'text', 'Text', 'song_text']
@@ -184,7 +147,7 @@ def get_lyrics_predictions(df, max_songs=None):
     
     print(f"Using lyrics column: {lyrics_column}")
     
-    # Initialize FREE lyrics classifier (VADER)
+
     try:
         classifier = FreeLyricsClassifier()
     except ImportError as e:
@@ -192,7 +155,7 @@ def get_lyrics_predictions(df, max_songs=None):
         print("Please install VADER: pip install vaderSentiment")
         return None
     
-    # Classify songs (no delay needed - it's free and local!)
+    # Classify songs
     if max_songs:
         print(f"Classifying {max_songs} songs...")
     else:
@@ -206,22 +169,19 @@ def get_lyrics_predictions(df, max_songs=None):
         song_column='track_name' if 'track_name' in df.columns else None,
         artist_column='artists' if 'artists' in df.columns else None,
         max_songs=max_songs,
-        delay=0  # No delay needed for VADER
+        delay=0  
     )
     
     return df_with_predictions
 
 
 def main():
-    """
-    Main function to run the comparison.
-    """
     print("=" * 60)
     print("Audio vs Lyrics Mood Classification Comparison")
     print("=" * 60)
     print()
     
-    # Step 1: Load dataset
+    # Load dataset
     print("Step 1: Loading dataset...")
     print(f"Loading from {DATASET_PATH}...")
     print("(This may take a moment for large datasets...)")
@@ -231,7 +191,7 @@ def main():
         print("You may need to download it from Google Drive (as mentioned by Nadine).")
         return
     
-    # TEST MODE: Only read first N rows for quick testing
+    # TEST MODE Only read first N rows for quick testing
     if TEST_MAX_SONGS is not None:
         print(f"⚠️  TEST MODE: Loading only first {TEST_MAX_SONGS} songs...")
         df = pd.read_csv(DATASET_PATH, nrows=TEST_MAX_SONGS)
@@ -242,7 +202,7 @@ def main():
     print(f"Columns: {list(df.columns)}")
     print()
     
-    # Step 2: Get audio predictions
+    # Get audio predictions
     print("Step 2: Getting audio predictions...")
     model_data = load_audio_model(MODEL_PATH)
     
@@ -263,11 +223,11 @@ def main():
     df['audio_second_choice'] = audio_info["second_choice"]
     df['audio_second_confidence'] = audio_info["second_confidence"]
     df['audio_margin'] = audio_info["margin"]
-    # Low-confidence flag based on threshold
+
     df['audio_low_confidence'] = df['audio_confidence'] < AUDIO_LOW_CONF_THRESHOLD
-    # Borderline flag: top1 and top2 are close in probability
+
     df['audio_borderline'] = df['audio_margin'] < AUDIO_BORDERLINE_MARGIN
-    # Human-readable top-2 combo for borderline cases
+
     df['audio_top2_combo'] = df.apply(
         lambda row: f"{row['audio_prediction']}|{row['audio_second_choice']}"
         if row['audio_borderline'] else row['audio_prediction'],
@@ -276,25 +236,25 @@ def main():
     print("Audio predictions and uncertainty metrics added to dataset")
     print()
     
-    # Step 3: Get lyrics predictions using FREE VADER
+    # Get lyrics predictions using FREE VADER
     print("Step 3: Getting lyrics predictions...")
     print("Using FREE VADER sentiment analysis (no API costs, runs locally!)")
     print("Processing all songs with lyrics...")
     print()
     
-    df_with_lyrics = get_lyrics_predictions(df, max_songs=TEST_MAX_SONGS)  # Use TEST_MAX_SONGS if set
+    df_with_lyrics = get_lyrics_predictions(df, max_songs=TEST_MAX_SONGS)  
     
     if df_with_lyrics is None:
         print("ERROR: Could not get lyrics predictions.")
         return
     
-    # Low-confidence flag for lyrics side (if confidence is available)
+
     if 'lyrics_confidence' in df_with_lyrics.columns:
         df_with_lyrics['lyrics_low_confidence'] = (
             df_with_lyrics['lyrics_confidence'] < LYRICS_LOW_CONF_THRESHOLD
         )
     
-    # Step 4: Compare predictions
+    # Compare predictions
     print("\nStep 4: Comparing predictions...")
     results = compare_predictions(
         df_with_lyrics,
@@ -303,7 +263,7 @@ def main():
         true_label_col='mood' if 'mood' in df_with_lyrics.columns else None
     )
     
-    # Step 5: Create basic visualization
+    # create basic visualization
     print("\nStep 5: Creating basic comparison visualization...")
     create_comparison_visualization(
         df_with_lyrics,
@@ -312,16 +272,16 @@ def main():
         save_path=str(BASE / "audio_lyrics_comparison.png")
     )
     
-    # Step 6: Create enhanced visualizations (Milestone 2 requirements) - one PNG per chart
-    print("\nStep 6: Creating enhanced visualizations (one PNG per chart)...")
+    #create enhanced visualizations
+    print("\nCreating enhanced visualizations...")
     
-    print("  - Confidence distributions (3a)...")
+    print(" Confidence distributions")
     plot_audio_confidence_distribution(save_path=str(BASE / "figures" / "audio_confidence_distribution.png"))
     plot_lyrics_confidence_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_distribution.png"))
     plot_audio_confidence_by_mood(save_path=str(BASE / "figures" / "audio_confidence_by_mood.png"))
     plot_lyrics_confidence_by_mood(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confidence_by_mood.png"))
-    # Uncertainty-focused plots (4.c)
-    print("  - Uncertainty visualizations (4c)...")
+    # Uncertainty-focused plots 
+    print("Uncertainty visualizations")
     plot_low_confidence_by_mood(
         df_with_lyrics,
         save_path=str(BASE / "figures" / "uncertainty_by_mood.png"),
@@ -337,15 +297,15 @@ def main():
         save_path=str(BASE / "figures" / "lyrics_low_conf_hist.png"),
     )
     
-    print("  - Mood maps (3b)...")
-    print("    * PCA (fast)...")
+    print(" Mood maps ")
+    print(" PCA")
     plot_mood_map(df=None, method='pca', n_samples=10000,
                   save_path=str(BASE / "figures" / "mood_map_pca.png"))
-    print("    * t-SNE (may take 2-3 minutes)...")
+    print("t-SNE")
     plot_mood_map(df=None, method='tsne', n_samples=3000,
                   save_path=str(BASE / "figures" / "mood_map_tsne.png"))
     
-    print("  - Audio vs lyrics comparisons (3d)...")
+    print("Audio vs lyrics comparisons")
     plot_audio_prediction_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "audio_prediction_distribution.png"))
     plot_lyrics_prediction_distribution(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_prediction_distribution.png"))
     plot_audio_lyrics_agreement_pie(df_with_lyrics, save_path=str(BASE / "figures" / "audio_lyrics_agreement_pie.png"))
@@ -357,16 +317,12 @@ def main():
         plot_audio_confusion_matrix_vs_true(df_with_lyrics, save_path=str(BASE / "figures" / "audio_confusion_matrix_vs_true.png"))
         plot_lyrics_confusion_matrix_vs_true(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confusion_matrix_vs_true.png"))
     
-    # Step 7: Save results
-    print("\nStep 7: Saving results...")
+    # Save results
+    print("\nSaving results...")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_with_lyrics.to_csv(OUTPUT_PATH, index=False)
     print(f"Saved results to {OUTPUT_PATH}")
-    
-    print("\n" + "=" * 60)
-    print("Comparison complete!")
-    print("All enhanced visualizations saved to figures/ directory")
-    print("=" * 60)
+
 
 
 if __name__ == "__main__":

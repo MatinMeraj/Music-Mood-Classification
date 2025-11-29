@@ -1,8 +1,3 @@
-"""
-Lyrics-based Mood Classifier using OpenAI API
-Simple and clear implementation for Milestone 2
-"""
-
 import os
 import pandas as pd
 from pathlib import Path
@@ -14,26 +9,14 @@ try:
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
-    print("Warning: openai package not installed. Run: pip install openai")
+    print("Warning: openai package not installed")
 
 
 class LyricsClassifier:
-    """
-    Simple lyrics-based mood classifier using OpenAI API.
-    Classifies songs into: happy, chill, sad, hyped
-    """
-    
     def __init__(self, api_key=None):
-        """
-        Initialize the lyrics classifier.
-        
-        Args:
-            api_key: Your OpenAI API key. If None, will look for OPENAI_API_KEY environment variable.
-        """
         if not OPENAI_AVAILABLE:
-            raise ImportError("openai package is required. Install it with: pip install openai")
-        
-        # Get API key from parameter or environment variable
+            raise ImportError("openai package is required")
+
         if api_key is None:
             api_key = os.getenv('OPENAI_API_KEY')
         
@@ -51,18 +34,7 @@ class LyricsClassifier:
         self.api_calls = 0
     
     def classify_lyrics(self, lyrics, song_name=None, artist=None):
-        """
-        Classify a song's mood based on its lyrics using OpenAI API.
-        
-        Args:
-            lyrics: The song lyrics (text string)
-            song_name: Optional song name (for better context)
-            artist: Optional artist name (for better context)
-        
-        Returns:
-            predicted_mood: One of ['happy', 'chill', 'sad', 'hyped']
-            confidence: A simple confidence score (0-1)
-        """
+    
         if not lyrics or pd.isna(lyrics) or str(lyrics).strip() == '':
             return None, 0.0
         
@@ -72,7 +44,7 @@ class LyricsClassifier:
         try:
             # Call OpenAI API
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",  # Using cheaper model for testing
+                model="gpt-3.5-turbo",  
                 messages=[
                     {
                         "role": "system",
@@ -83,8 +55,8 @@ class LyricsClassifier:
                         "content": prompt
                     }
                 ],
-                temperature=0.3,  # Lower temperature = more consistent
-                max_tokens=10     # We only need one word
+                temperature=0.3, 
+                max_tokens=10    
             )
             
             # Get the prediction
@@ -95,18 +67,16 @@ class LyricsClassifier:
             
             # Validate that it's one of our moods
             if predicted_mood not in self.mood_labels:
-                # Try to find mood in the response
                 for mood in self.mood_labels:
                     if mood in predicted_mood:
                         predicted_mood = mood
                         break
                 else:
-                    # Default to 'chill' if we can't parse it
                     predicted_mood = 'chill'
             
             self.api_calls += 1
             
-            # Simple confidence (we'll improve this later)
+            # Simple confidence
             confidence = 0.8 if predicted_mood in self.mood_labels else 0.5
             
             return predicted_mood, confidence
@@ -116,10 +86,6 @@ class LyricsClassifier:
             return None, 0.0
     
     def _create_prompt(self, lyrics, song_name=None, artist=None):
-        """
-        Create a prompt for OpenAI API.
-        Keep it simple and clear.
-        """
         prompt = "Classify this song's mood based on its lyrics.\n\n"
         
         if song_name and artist:
@@ -128,7 +94,7 @@ class LyricsClassifier:
             prompt += f"Song: {song_name}\n\n"
         
         prompt += "Lyrics:\n"
-        prompt += str(lyrics)[:2000]  # Limit to 2000 characters to save tokens
+        prompt += str(lyrics)[:2000] 
         prompt += "\n\n"
         prompt += "Choose ONE mood: happy, chill, sad, or hyped.\n"
         prompt += "Respond with ONLY the mood word (lowercase)."
@@ -137,34 +103,18 @@ class LyricsClassifier:
     
     def classify_dataset(self, df, lyrics_column='text', song_column='track_name', 
                         artist_column='artists', max_songs=None, delay=1):
-        """
-        Classify multiple songs from a dataset.
-        
-        Args:
-            df: DataFrame with songs and lyrics
-            lyrics_column: Name of column with lyrics
-            song_column: Name of column with song names
-            artist_column: Name of column with artist names
-            max_songs: Maximum number of songs to classify (None = all)
-            delay: Delay between API calls in seconds (to avoid rate limits)
-        
-        Returns:
-            DataFrame with predictions added as 'lyrics_prediction' column
-        """
-        # Make a copy to avoid modifying original
+
         result_df = df.copy()
         
-        # Check if lyrics column exists
         if lyrics_column not in df.columns:
             raise ValueError(f"Lyrics column '{lyrics_column}' not found in dataset.")
         
-        # Limit number of songs if specified
+
         if max_songs:
             df_to_process = df.head(max_songs).copy()
         else:
             df_to_process = df.copy()
         
-        # List to store predictions
         predictions = []
         confidences = []
         
@@ -182,15 +132,12 @@ class LyricsClassifier:
             predictions.append(mood)
             confidences.append(confidence)
             
-            # Print progress
             if (idx + 1) % 10 == 0:
                 print(f"Processed {idx + 1}/{len(df_to_process)} songs...")
             
-            # Delay between API calls to avoid rate limits
             if delay > 0 and idx < len(df_to_process) - 1:
                 time.sleep(delay)
-        
-        # Add predictions to result dataframe
+
         result_df['lyrics_prediction'] = None
         result_df['lyrics_confidence'] = 0.0
         
@@ -208,23 +155,19 @@ class LyricsClassifier:
 
 
 def main():
-    """
-    Simple example of how to use the lyrics classifier.
-    """
+
     print("=" * 60)
     print("Lyrics-based Mood Classifier")
     print("=" * 60)
     print()
     
-    # Check if API key is set
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         print("ERROR: OPENAI_API_KEY environment variable not set.")
         print("Please set it before running this script.")
         print("Example: export OPENAI_API_KEY='your-api-key-here'")
         return
-    
-    # Initialize classifier
+
     print("Initializing lyrics classifier...")
     classifier = LyricsClassifier(api_key=api_key)
     
@@ -247,31 +190,6 @@ def main():
     print(f"Confidence: {confidence:.2f}")
     print()
     
-    # Example: Load dataset and classify (uncomment to use)
-    """
-    dataset_path = Path("data/processed/songs_mapped.csv")
-    if dataset_path.exists():
-        print(f"Loading dataset from {dataset_path}...")
-        df = pd.read_csv(dataset_path)
-        
-        # Classify first 10 songs as a test
-        print("Classifying first 10 songs...")
-        df_with_predictions = classifier.classify_dataset(
-            df,
-            lyrics_column='text',  # Adjust based on your dataset
-            max_songs=10,
-            delay=1  # 1 second delay between API calls
-        )
-        
-        # Save results
-        output_path = Path("data/processed/songs_with_lyrics_predictions.csv")
-        df_with_predictions.to_csv(output_path, index=False)
-        print(f"Saved results to {output_path}")
-    else:
-        print(f"Dataset not found at {dataset_path}")
-    """
-
-
 if __name__ == "__main__":
     main()
 

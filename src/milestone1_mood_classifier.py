@@ -1,7 +1,3 @@
-"""
-Milestone 1: Song Mood Classification System
-Using Kaggle Dataset for Training and Evaluation
-"""
 
 import pandas as pd
 import numpy as np
@@ -23,7 +19,6 @@ class MoodClassifier:
         self.mood_labels = ['happy', 'chill', 'sad', 'hyped']
         
     def load_music_dataset(self):
-        """Load music dataset"""
         print("Loading music dataset...")
         
         try:
@@ -41,7 +36,6 @@ class MoodClassifier:
             return self.create_fallback_dataset()
     
     def create_fallback_dataset(self):
-        """Create fallback dataset if real data not available"""
         print("Creating fallback dataset...")
         np.random.seed(42)
         
@@ -95,22 +89,18 @@ class MoodClassifier:
         return df
     
     def train_models(self, df):
-        """Train and compare multiple models"""
         print("\nTraining models on dataset...")
-        
-        # Prepare features
+
         features = ['tempo', 'energy', 'valence', 'loudness', 'danceability', 
                    'speechiness', 'acousticness', 'instrumentalness', 'liveness']
         
         X = df[features]
         y = df['mood']
         
-        # Split data
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
         
-        # Scale features
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_test_scaled = self.scaler.transform(X_test)
         
@@ -126,7 +116,7 @@ class MoodClassifier:
         best_score = 0
         
         for name, model in models.items():
-            # Cross-validation
+            # Cross validation
             scores = cross_val_score(model, X_train_scaled, y_train, cv=5)
             mean_score = scores.mean()
             std_score = scores.std()
@@ -167,7 +157,6 @@ class MoodClassifier:
         return results, X_test, y_test, y_pred
     
     def create_visualizations(self, df, X_test, y_test, y_pred):
-        """Create comprehensive visualizations"""
         print("\nCreating visualizations...")
         
         # Set up the plotting style
@@ -178,7 +167,7 @@ class MoodClassifier:
         fig, axes = plt.subplots(2, 3, figsize=(18, 12))
         fig.suptitle('Song Mood Classification Analysis', fontsize=16, fontweight='bold')
         
-        # 1. Mood distribution
+        # Mood distribution
         mood_counts = df['mood'].value_counts()
         axes[0,0].bar(mood_counts.index, mood_counts.values, color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'])
         axes[0,0].set_title('Mood Distribution in Dataset')
@@ -186,7 +175,7 @@ class MoodClassifier:
         axes[0,0].set_ylabel('Number of Songs')
         axes[0,0].tick_params(axis='x', rotation=45)
         
-        # 2. Tempo vs Energy by mood
+        # Tempo vs Energy by mood
         for mood in self.mood_labels:
             mood_data = df[df['mood'] == mood]
             axes[0,1].scatter(mood_data['tempo'], mood_data['energy'], 
@@ -197,7 +186,7 @@ class MoodClassifier:
         axes[0,1].legend()
         axes[0,1].grid(True, alpha=0.3)
         
-        # 3. Valence vs Loudness by mood
+        # Valence vs Loudness by mood
         for mood in self.mood_labels:
             mood_data = df[df['mood'] == mood]
             axes[0,2].scatter(mood_data['valence'], mood_data['loudness'], 
@@ -208,7 +197,7 @@ class MoodClassifier:
         axes[0,2].legend()
         axes[0,2].grid(True, alpha=0.3)
         
-        # 4. Confusion Matrix
+        # Confusion Matrix
         cm = confusion_matrix(y_test, y_pred, labels=self.mood_labels)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
                     xticklabels=self.mood_labels, yticklabels=self.mood_labels, ax=axes[1,0])
@@ -216,7 +205,7 @@ class MoodClassifier:
         axes[1,0].set_xlabel('Predicted')
         axes[1,0].set_ylabel('Actual')
         
-        # 5. Feature importance (if Random Forest)
+        # Feature importance
         if hasattr(self.model, 'feature_importances_'):
             feature_names = ['tempo', 'energy', 'valence', 'loudness', 'danceability', 
                            'speechiness', 'acousticness', 'instrumentalness', 'liveness']
@@ -253,8 +242,7 @@ class MoodClassifier:
         plt.tight_layout()
         plt.savefig('milestone1_analysis.png', dpi=300, bbox_inches='tight')
         plt.show()
-        
-        print("Visualizations saved as 'milestone1_analysis.png'")
+
     
     def predict_new_song(self, tempo, energy, valence, loudness, danceability=0.5, 
                         speechiness=0.1, acousticness=0.1, instrumentalness=0.1, liveness=0.1):
@@ -276,7 +264,6 @@ class MoodClassifier:
         return prediction, confidence
     
     def save_model(self, filename='milestone1_model.pkl'):
-        """Save the trained model"""
         import joblib
         joblib.dump({
             'model': self.model,
@@ -295,8 +282,7 @@ class MoodClassifier:
         print(f"Model loaded from '{filename}'")
 
 def main():
-    """Main execution for Milestone 1"""
-    print("Milestone 1: Song Mood Classification System")
+    print("Song Mood Classification System")
     print("=" * 60)
     print("Using Dataset for Training and Evaluation")
     print("Goal: Basic end-to-end classifier working on labeled dataset")
@@ -326,10 +312,7 @@ def main():
     print("Example: Tempo=120, Energy=0.8, Valence=0.7, Loudness=-5")
     prediction, confidence = classifier.predict_new_song(120, 0.8, 0.7, -5)
     print(f"Predicted mood: {prediction} (confidence: {confidence:.3f})")
-    
-    print("\nMilestone 1 Complete!")
-    print("Ready for team collaboration and GitHub upload")
-    
+
     return classifier, df
 
 if __name__ == "__main__":

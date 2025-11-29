@@ -36,7 +36,6 @@ def main():
         model="audio",
         save_path=str(FIG_DIR / "audio_low_conf_hist.png"),
     )
-    # Optional: if you also want lyrics unchanged
     plot_low_confidence_hist(
         df,
         model="lyrics",

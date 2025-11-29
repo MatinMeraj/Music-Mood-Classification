@@ -1,8 +1,3 @@
-"""
-FREE Lyrics Classifier using VADER Sentiment
-No API needed, no cost, runs locally!
-"""
-
 import pandas as pd
 from pathlib import Path
 import os
@@ -17,10 +12,6 @@ except ImportError:
 
 
 class FreeLyricsClassifier:
-    """
-    FREE lyrics classifier using VADER sentiment analysis
-    No API needed, no cost!
-    """
     
     def __init__(self):
         if not VADER_AVAILABLE:
@@ -31,39 +22,22 @@ class FreeLyricsClassifier:
         self.api_calls = 0  # Keep for compatibility
     
     def classify_lyrics(self, lyrics, song_name=None, artist=None):
-        """
-        Classify song mood based on lyrics using VADER sentiment.
-        
-        Args:
-            lyrics: Song lyrics
-            song_name: Optional song name
-            artist: Optional artist name
-        
-        Returns:
-            predicted_mood: One of ['happy', 'chill', 'sad', 'hyped']
-            confidence: Confidence score (0-1)
-        """
         if not lyrics or pd.isna(lyrics) or str(lyrics).strip() == '':
             return None, 0.0
         
         # Get sentiment scores
         scores = self.analyzer.polarity_scores(str(lyrics))
         
-        # Compound score: -1 (very negative) to +1 (very positive)
         compound = scores['compound']
         
-        # Map to moods based on sentiment and intensity
         if compound > 0.5:
             # Very positive = happy
             mood = 'happy'
             confidence = compound
         elif compound > 0.1:
-            # Slightly positive = chill
             mood = 'chill'
-            # Boost confidence: chill is a valid mood, not just uncertainty
-            confidence = 0.5 + (compound - 0.1) * 0.625  # Scale to 0.5-0.75 range
+            confidence = 0.5 + (compound - 0.1) * 0.625  
         elif compound < -0.5:
-            # Very negative = sad
             mood = 'sad'
             confidence = abs(compound)
         elif compound < -0.1:
@@ -73,14 +47,13 @@ class FreeLyricsClassifier:
                 confidence = abs(compound)
             else:
                 mood = 'chill'
-                # Boost confidence for near-neutral chill
-                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  # Scale to 0.55-0.7 range
+                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  
         else:
             # Neutral = chill
             mood = 'chill'
-            confidence = 0.65  # Neutral songs are confidently "chill"
+            confidence = 0.65 
         
-        # Check for "hyped" keywords (energy-related words)
+        # Check for "hyped" keywords 
         lyrics_lower = str(lyrics).lower()
         hyped_keywords = ['party', 'dance', 'energy', 'fire', 'wild', 'crazy', 'lit', 
                          'pump', 'beat', 'bass', 'drop', 'turnt', 'hype']
@@ -94,10 +67,6 @@ class FreeLyricsClassifier:
     
     def classify_dataset(self, df, lyrics_column='text', song_column='track_name', 
                         artist_column='artists', max_songs=None, delay=0):
-        """
-        Classify multiple songs from dataset.
-        FREE version - no delay needed!
-        """
         result_df = df.copy()
         
         if lyrics_column not in df.columns:
@@ -147,7 +116,6 @@ class FreeLyricsClassifier:
 
 
 def main():
-    """Test the free classifier"""
     print("=" * 60)
     print("FREE Lyrics Classifier (VADER Sentiment)")
     print("=" * 60)
