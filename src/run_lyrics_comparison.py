@@ -114,6 +114,16 @@ def get_audio_predictions(df, model_data):
         margin = max_conf - second_conf
         second_labels = classes[top2_idx]
 
+        # Validate confidence values (should be in [0, 1])
+        max_conf = np.clip(max_conf, 0, 1)
+        second_conf = np.clip(second_conf, 0, 1)
+        margin = np.clip(margin, 0, 1)  # Margin should also be in [0, 1]
+        
+        # Replace any NaN/Infinity values with safe defaults
+        max_conf = np.nan_to_num(max_conf, nan=0.0, posinf=1.0, neginf=0.0)
+        second_conf = np.nan_to_num(second_conf, nan=0.0, posinf=1.0, neginf=0.0)
+        margin = np.nan_to_num(margin, nan=0.0, posinf=1.0, neginf=0.0)
+
         print(f"Got {len(predictions)} audio predictions")
         return {
             "predictions": predictions,
@@ -176,10 +186,8 @@ def get_lyrics_predictions(df, max_songs=None):
 
 
 def main():
-    print("=" * 60)
     print("Audio vs Lyrics Mood Classification Comparison")
-    print("=" * 60)
-    print()
+
     
     # Load dataset
     print("Step 1: Loading dataset...")
@@ -193,12 +201,12 @@ def main():
     
     # TEST MODE Only read first N rows for quick testing
     if TEST_MAX_SONGS is not None:
-        print(f"⚠️  TEST MODE: Loading only first {TEST_MAX_SONGS} songs...")
+        print(f"TEST MODE: Loading only first {TEST_MAX_SONGS} songs...")
         df = pd.read_csv(DATASET_PATH, nrows=TEST_MAX_SONGS)
-        print(f"✓ Loaded {len(df)} songs from dataset (TEST MODE)")
+        print(f"Loaded {len(df)} songs from dataset (TEST MODE)")
     else:
         df = pd.read_csv(DATASET_PATH)
-        print(f"✓ Loaded {len(df)} songs from dataset")
+        print(f"Loaded {len(df)} songs from dataset")
     print(f"Columns: {list(df.columns)}")
     print()
     
@@ -217,12 +225,19 @@ def main():
         print("ERROR: Could not get audio predictions.")
         return
     
-    # Add audio predictions and uncertainty metrics to dataframe
-    df['audio_prediction'] = audio_info["predictions"]
-    df['audio_confidence'] = audio_info["confidence"]
-    df['audio_second_choice'] = audio_info["second_choice"]
-    df['audio_second_confidence'] = audio_info["second_confidence"]
-    df['audio_margin'] = audio_info["margin"]
+    # Validate audio_info structure
+    required_keys = ["predictions", "confidence", "second_choice", "second_confidence", "margin"]
+    missing_keys = [key for key in required_keys if key not in audio_info]
+    if missing_keys:
+        print(f"ERROR: Invalid audio_info structure. Missing keys: {missing_keys}")
+        return
+    
+    # Convert numpy arrays to proper types for CSV saving
+    df['audio_prediction'] = audio_info["predictions"].astype(str)
+    df['audio_confidence'] = audio_info["confidence"].astype(float)
+    df['audio_second_choice'] = audio_info["second_choice"].astype(str)
+    df['audio_second_confidence'] = audio_info["second_confidence"].astype(float)
+    df['audio_margin'] = audio_info["margin"].astype(float)
 
     df['audio_low_confidence'] = df['audio_confidence'] < AUDIO_LOW_CONF_THRESHOLD
 
@@ -320,8 +335,42 @@ def main():
     # Save results
     print("\nSaving results...")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Ensure all prediction columns are strings and confidence columns are floats before saving
+    if 'audio_prediction' in df_with_lyrics.columns:
+        df_with_lyrics['audio_prediction'] = df_with_lyrics['audio_prediction'].astype(str)
+        # Replace 'nan' strings with actual NaN
+        df_with_lyrics['audio_prediction'] = df_with_lyrics['audio_prediction'].replace('nan', pd.NA)
+    if 'lyrics_prediction' in df_with_lyrics.columns:
+        df_with_lyrics['lyrics_prediction'] = df_with_lyrics['lyrics_prediction'].astype(str)
+        # Replace 'nan' strings with actual NaN
+        df_with_lyrics['lyrics_prediction'] = df_with_lyrics['lyrics_prediction'].replace('nan', pd.NA)
+    if 'audio_confidence' in df_with_lyrics.columns:
+        df_with_lyrics['audio_confidence'] = pd.to_numeric(df_with_lyrics['audio_confidence'], errors='coerce')
+        # Ensure confidence is in valid range [0, 1]
+        df_with_lyrics['audio_confidence'] = df_with_lyrics['audio_confidence'].clip(0, 1)
+    if 'lyrics_confidence' in df_with_lyrics.columns:
+        df_with_lyrics['lyrics_confidence'] = pd.to_numeric(df_with_lyrics['lyrics_confidence'], errors='coerce')
+        # Ensure confidence is in valid range [0, 1]
+        df_with_lyrics['lyrics_confidence'] = df_with_lyrics['lyrics_confidence'].clip(0, 1)
+    
+    # Validate required columns exist before saving
+    required_cols = ['audio_prediction', 'lyrics_prediction']
+    missing_cols = [col for col in required_cols if col not in df_with_lyrics.columns]
+    if missing_cols:
+        print(f"ERROR: Missing required columns before saving: {missing_cols}")
+        print(f"Available columns: {list(df_with_lyrics.columns)}")
+        return
+    
+    # Check for empty dataframe
+    if len(df_with_lyrics) == 0:
+        print("ERROR: DataFrame is empty, cannot save")
+        return
+    
     df_with_lyrics.to_csv(OUTPUT_PATH, index=False)
-    print(f"Saved results to {OUTPUT_PATH}")
+    print(f"Saved {len(df_with_lyrics)} rows to {OUTPUT_PATH}")
+    print(f"  Columns saved: {len(df_with_lyrics.columns)}")
+    print(f"  Required columns present: {all(col in df_with_lyrics.columns for col in required_cols)}")
 
 
 
