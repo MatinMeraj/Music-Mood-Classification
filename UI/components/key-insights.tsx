@@ -4,30 +4,30 @@ import { AlertTriangle, TrendingUp, Target, GitCompare } from "lucide-react"
 const insights = [
   {
     icon: AlertTriangle,
-    title: 'Audio Model Struggles with "Hyped"',
+    title: "Low Model Agreement",
     description:
-      "79.8% of hyped predictions are low-confidence, indicating difficulty distinguishing high-energy moods",
-    color: "text-hyped",
+      "Only 25.9% agreement between audio and lyrics models, reflecting how differently audio production and lyrical content express emotion",
+    color: "text-primary",
   },
   {
     icon: TrendingUp,
-    title: "Lyrics Baseline More Confident",
+    title: "Audio Model Outperforms",
     description:
-      "Mean confidence of 0.920 vs 0.403 for audio, though VADER is rule-based and not trained on this dataset",
-    color: "text-chart-2",
+      "Audio-based Random Forest model achieves 35.2% accuracy vs. 26% for lyrics model, showing audio features better capture mood",
+    color: "text-chart-1",
   },
   {
     icon: Target,
-    title: 'Best Agreement on "Sad"',
-    description: "57.4% agreement rate for sad songs (1728/3010), where both audio and lyrical cues align strongly",
-    color: "text-sad",
+    title: "Largest Mismatch: Hyped vs Sad",
+    description: "2,911 songs where audio predicts hyped but lyrics predicts sad, showing energetic production often masks negative lyrics",
+    color: "text-hyped",
   },
   {
     icon: GitCompare,
     title: "Complementary Model Strengths",
     description:
-      "57.5% disagreement shows models capture different aspects - audio captures music, lyrics capture sentiment",
-    color: "text-primary",
+      "74.1% disagreement shows models capture different aspects - audio captures emotional tone (tempo, rhythm, intensity), lyrics capture emotional meaning (content, narrative)",
+    color: "text-chart-2",
   },
 ]
 

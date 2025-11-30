@@ -12,7 +12,8 @@ This project implements a system that:
 
 ## Prerequisites
 
-- Python 3.8 
+- Python 3.8+
+- Node.js 18+ and npm (for running the web interface)
 - Required Python packages (see `requirements.txt`)
 
 ## Installation
@@ -23,9 +24,15 @@ git clone <repository-url>
 cd Spotify-Song-Classifier
 ```
 
-2. Install dependencies:
+2. Install Python dependencies:
 ```bash
 pip install -r requirements.txt
+```
+
+3. Install UI dependencies (if you want to run the web interface):
+```bash
+cd UI
+npm install --legacy-peer-deps
 ```
 
 ## Required Files
@@ -58,6 +65,39 @@ This script:
 - Dataset file must exist at `data/processed/songs_mapped_20k_balanced.csv`
 - Model file must exist at `models/new_song_mood_model.joblib`
 - Dataset must have a lyrics column (`text`, `lyrics`, `Lyrics`, `Text`, or `song_text`)
+
+## Running the Web Interface
+
+The project includes a web interface built with Next.js that lets you explore the model predictions through interactive charts and get predictions for individual songs.
+
+### Starting the API Server
+
+First, you'll need to start the Flask API server that handles predictions and serves data to the frontend:
+
+```bash
+python src/api_server.py
+```
+
+The server will start on `http://localhost:8000`. You should see output confirming that the models loaded successfully. Keep this terminal window open while using the web interface.
+
+**Note**: Make sure you've run `run_lyrics_comparison.py` at least once to generate the `songs_with_predictions.csv` file, otherwise some statistics endpoints won't work.
+
+### Starting the UI
+
+In a separate terminal, navigate to the UI directory and start the development server:
+
+```bash
+cd UI
+npm run dev
+```
+
+The UI will be available at `http://localhost:3000`. Open it in your browser to see:
+- Interactive charts comparing audio and lyrics model predictions
+- Model performance metrics and confusion matrices
+- Dataset distribution visualizations
+- A search interface to get predictions for specific songs
+
+Both servers need to be running simultaneously - the API server handles the backend logic while the UI provides the frontend interface.
 
 ## Using the Classifiers Directly in Python
 
@@ -161,18 +201,24 @@ df_with_predictions = classifier.classify_dataset(
 Spotify-Song-Classifier/
 ├── src/
 │   ├── run_lyrics_comparison.py      # Main script that generates predictions
+│   ├── api_server.py                 # Flask API server for web interface
 │   ├── train_audio_model.py          # Train audio model
 │   ├── train_lyrics_full.py          # Train lyrics model
 │   ├── lyrics_classifier_free.py     # VADER-based lyrics classifier
 │   ├── compare_audio_lyrics.py       # Comparison analysis
 │   └── ...                          
+├── UI/                                # Next.js web interface
+│   ├── app/                          # Next.js app directory
+│   ├── components/                   # React components
+│   ├── package.json                  # Node.js dependencies
+│   └── ...
 ├── data/
 │   └── processed/
 │       ├── songs_mapped_20k_balanced.csv  # Input dataset
 │       └── songs_with_predictions.csv     # Generated predictions
 ├── models/
 │   └── new_song_mood_model.joblib        # Trained audio model
-├── requirements.txt                       #  dependencies
+├── requirements.txt                       # Python dependencies
 └── README.md                             
 ```
 
@@ -240,46 +286,43 @@ These are defined in the scripts and can be modified.
    - Check that lyrics column exists and has data
    - Some songs may not have lyrics available
 
-## Example: Complete Workflow
+### Web Interface Issues
 
-```python
-from src.run_lyrics_comparison import load_audio_model, get_audio_predictions
-from src.lyrics_classifier_free import FreeLyricsClassifier
-import pandas as pd
+1. **UI won't start**:
+   - Make sure you're in the `UI` directory when running `npm run dev`
+   - Try deleting `node_modules` and `.next` folder, then run `npm install --legacy-peer-deps` again
+   - Check that Node.js version is 18 or higher: `node --version`
 
-# 1. Load dataset
-df = pd.read_csv("data/processed/songs_mapped_20k_balanced.csv", nrows=100)
+2. **API server connection errors**:
+   - Verify the API server is running on `http://localhost:8000`
+   - Check the browser console for CORS errors (shouldn't happen, but worth checking)
+   - Make sure both servers are running - the UI on port 3000 and API on port 8000
 
-# 2. Get audio predictions
-model_data = load_audio_model(Path("models/new_song_mood_model.joblib"))
-audio_results = get_audio_predictions(df, model_data)
-df['audio_prediction'] = audio_results['predictions']
-df['audio_confidence'] = audio_results['confidence']
+3. **Charts not loading**:
+   - Ensure `songs_with_predictions.csv` exists in `data/processed/`
+   - Run `python src/run_lyrics_comparison.py` to generate the predictions file if it's missing
+   - Check the API server terminal for any error messages
 
-# 3. Get lyrics predictions
-classifier = FreeLyricsClassifier()
-df = classifier.classify_dataset(
-    df,
-    lyrics_column='text',
-    song_column='track_name',
-    artist_column='artists'
-)
-
-# 4. Compare results
-df['agree'] = df['audio_prediction'] == df['lyrics_prediction']
-agreement_rate = df['agree'].mean() * 100
-print(f"Agreement rate: {agreement_rate:.1f}%")
-
-# 5. Save results
-df.to_csv("my_predictions.csv", index=False)
-```
 
 ## Dependencies
 
-Key dependencies (see `requirements.txt` for full list):
+### Python Dependencies
+
+Key Python packages (see `requirements.txt` for full list):
 - pandas - Data manipulation
 - numpy - Numerical operations
 - scikit-learn - Machine learning
 - joblib - Model serialization
 - vaderSentiment - Lyrics sentiment analysis
+- flask, flask-cors - API server
 - matplotlib, seaborn - Visualizations (optional)
+
+### Node.js Dependencies
+
+The UI uses Next.js and React. Key packages include:
+- next, react, react-dom - Core framework
+- recharts - Charting library
+- tailwindcss - Styling
+- Various Radix UI components for the interface
+
+All dependencies are listed in `UI/package.json`. Install them with `npm install --legacy-peer-deps` from the `UI` directory.

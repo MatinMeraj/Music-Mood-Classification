@@ -1,10 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts"
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface DatasetDistribution {
   mood: string
@@ -13,97 +10,21 @@ interface DatasetDistribution {
 }
 
 export function DatasetExplorer() {
-  const [datasetDistribution, setDatasetDistribution] = useState<DatasetDistribution[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const fetchDataset = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        
-        const response = await fetch(`${API_BASE_URL}/api/dataset`)
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        
-        // Map API response to component format - ensure valid data
-        if (data.distribution && Array.isArray(data.distribution)) {
-          const moodColors: Record<string, string> = {
-            "Happy": "hsl(var(--happy))",
-            "Chill": "hsl(var(--chill))",
-            "Sad": "hsl(var(--sad))",
-            "Hyped": "hsl(var(--hyped))",
-          }
-          
-          const mapped = data.distribution
-            .filter((item: any) => item && typeof item === 'object' && item.mood)
-            .map((item: { mood: string; count: number }) => {
-              const count = Number(item.count)
-              return {
-                mood: String(item.mood || ""),
-                count: isNaN(count) ? 0 : Math.max(0, count),
-                color: moodColors[String(item.mood || "")] || "hsl(var(--muted-foreground))",
-              }
-            })
-            .filter((item: DatasetDistribution) => item.mood && item.mood.length > 0)
-          
-          setDatasetDistribution(mapped.length > 0 ? mapped : [])
-          setTotal(isNaN(Number(data.total)) ? 0 : Math.max(0, Number(data.total)))
-        }
-        
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load dataset statistics"
-        setError(errorMessage)
-        console.error("Error fetching dataset:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchDataset()
-  }, [])
-  if (loading) {
-    return (
-      <section className="space-y-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl sm:text-4xl font-bold text-balance">Dataset Overview</h2>
-          <p className="text-muted-foreground text-lg text-balance">
-            Understanding the distribution and balance of our training data
-          </p>
-        </div>
-        <Card className="p-6">
-          <p className="text-center text-muted-foreground">Loading dataset statistics...</p>
-        </Card>
-      </section>
-    )
+  // Hardcoded data from report: 20,000 songs, 5,000 per mood
+  const moodColors: Record<string, string> = {
+    "Happy": "hsl(var(--happy))",
+    "Chill": "hsl(var(--chill))",
+    "Sad": "hsl(var(--sad))",
+    "Hyped": "hsl(var(--hyped))",
   }
-
-  if (error) {
-    return (
-      <section className="space-y-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl sm:text-4xl font-bold text-balance">Dataset Overview</h2>
-          <p className="text-muted-foreground text-lg text-balance">
-            Understanding the distribution and balance of our training data
-          </p>
-        </div>
-        <Card className="p-6">
-          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-            <p className="font-semibold mb-1">Error loading dataset statistics</p>
-            <p>{error}</p>
-            <p className="mt-2 text-xs">Make sure the API server is running on {API_BASE_URL}</p>
-          </div>
-        </Card>
-      </section>
-    )
-  }
+  
+  const datasetDistribution: DatasetDistribution[] = [
+    { mood: "Happy", count: 5000, color: moodColors["Happy"] },
+    { mood: "Chill", count: 5000, color: moodColors["Chill"] },
+    { mood: "Sad", count: 5000, color: moodColors["Sad"] },
+    { mood: "Hyped", count: 5000, color: moodColors["Hyped"] },
+  ]
+  const total = 20000
 
   return (
     <section className="space-y-8">

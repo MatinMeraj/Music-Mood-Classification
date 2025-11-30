@@ -18,7 +18,9 @@ export function AboutSection() {
           </div>
           <h3 className="text-xl font-semibold">Audio Feature Model</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Uses 9 audio features: tempo, energy, valence, loudness, danceability, speechiness, acousticness, instrumentalness, and liveness. Pipeline: Input → Imputation → Standardization → Model Training → Model Prediction. Random Forest classifier achieved 35.2% test accuracy (vs. 25% random chance), outperforming Logistic Regression and KNN.
+            Extracts 9 audio features from Spotify API: tempo, energy, valence, loudness, danceability, speechiness,
+            acousticness, instrumentalness, and liveness. Pipeline: Input → Imputation → Standardization → Model Training →
+            Model Prediction. Random Forest performed best with 35.2% test accuracy (vs. 25% random chance).
           </p>
         </Card>
 
@@ -28,8 +30,9 @@ export function AboutSection() {
           </div>
           <h3 className="text-xl font-semibold">Lyrics Sentiment Model</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Applies VADER (Valence Aware Dictionary and sEntiment Reasoner) sentiment analysis to song lyrics.
-            Classifies moods based on compound sentiment scores, capturing emotional content from textual data.
+            Applies VADER (Valence Aware Dictionary and sEntiment Reasoner), a rule-based sentiment analyzer, to song lyrics.
+            Sentiment scores (positive, negative, neutral) are mapped to compound scores and then to the four mood classes. The
+            lyrics model achieved 26% accuracy with a strong bias toward sad and happy.
           </p>
         </Card>
 
@@ -39,9 +42,9 @@ export function AboutSection() {
           </div>
           <h3 className="text-xl font-semibold">Dataset</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            551,423 songs across 4 mood categories (Happy: 214K, Chill: 28K, Sad: 171K, Hyped: 138K). Data sourced from
-            Spotify with both audio features and lyrics for comprehensive analysis. Class imbalance addressed through
-            weighted loss functions and balanced sampling.
+            Started with 500,000 tracks containing audio features and mood labels from 10 categories. Mapped to 4 target moods
+            (happy, chill, sad, hyped) and downsampled to create a balanced dataset of 20,000 songs (5,000 per mood). Data
+            sourced from Spotify with both audio features and lyrics for comprehensive analysis.
           </p>
         </Card>
 
@@ -51,9 +54,10 @@ export function AboutSection() {
           </div>
           <h3 className="text-xl font-semibold">Evaluation</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Models evaluated using accuracy, confusion matrices, and confidence thresholds. Cross-validation performed
-            with multiple classifiers (Random Forest: 45%, KNN: 41%, LogReg: 28%). Agreement analysis reveals
-            complementary strengths between audio and lyrics approaches.
+            Models evaluated using accuracy, confusion matrices, and confidence thresholds. Among Logistic Regression, KNN,
+            and Random Forest, the Random Forest performed best with 35.2% test accuracy (vs. 25% random chance). The lyrics
+            model achieved 26% accuracy with a strong bias toward sad and happy. Agreement analysis shows 25.9% agreement
+            between the two pipelines.
           </p>
         </Card>
       </div>

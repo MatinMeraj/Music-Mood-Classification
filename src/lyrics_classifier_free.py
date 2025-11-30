@@ -32,16 +32,21 @@ class FreeLyricsClassifier:
         # Get sentiment scores
         scores = self.analyzer.polarity_scores(str(lyrics))
         
+        # Compound score: -1 (very negative) to +1 (very positive)
         compound = scores['compound']
         
+        # Map to moods based on sentiment and intensity
         if compound > 0.5:
             # Very positive = happy
             mood = 'happy'
             confidence = compound
         elif compound > 0.1:
+            # Slightly positive = chill
             mood = 'chill'
-            confidence = 0.5 + (compound - 0.1) * 0.625  
+            # Boost confidence: chill is a valid mood, not just uncertainty
+            confidence = 0.5 + (compound - 0.1) * 0.625  # Scale to 0.5-0.75 range
         elif compound < -0.5:
+            # Very negative = sad
             mood = 'sad'
             confidence = abs(compound)
         elif compound < -0.1:
@@ -51,13 +56,14 @@ class FreeLyricsClassifier:
                 confidence = abs(compound)
             else:
                 mood = 'chill'
-                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  
+                # Boost confidence for near-neutral chill
+                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  # Scale to 0.55-0.7 range
         else:
             # Neutral = chill
             mood = 'chill'
-            confidence = 0.65 
+            confidence = 0.65  # Neutral songs are confidently "chill"
         
-        # Check for "hyped" keywords 
+        # Check for "hyped" keywords (energy-related words)
         lyrics_lower = str(lyrics).lower()
         hyped_keywords = ['party', 'dance', 'energy', 'fire', 'wild', 'crazy', 'lit', 
                          'pump', 'beat', 'bass', 'drop', 'turnt', 'hype']
@@ -124,6 +130,7 @@ class FreeLyricsClassifier:
         
         print(f"\nFinished! Classified {len(df_to_process)} songs.")
         print(f"Total classifications: {self.api_calls}")
+        print("💰 Cost: $0.00 (FREE!)")
         
         return result_df
 

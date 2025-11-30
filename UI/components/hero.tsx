@@ -19,8 +19,9 @@ export function Hero() {
           </h1>
 
           <p className="text-xl text-foreground/80 max-w-3xl mx-auto text-balance leading-relaxed">
-            A machine learning system that classifies songs into four mood categories using audio features as the main
-            method, with lyrics sentiment analysis as a baseline comparison
+            A machine learning system that predicts song mood using two separate AI pipelines: an audio-based machine learning
+            classifier and a lyrics-based sentiment model. Evaluates how each modality expresses mood and compares their
+            predictions on the same dataset.
           </p>
 
           <div className="flex flex-wrap justify-center gap-4 pt-4">
