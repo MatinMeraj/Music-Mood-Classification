@@ -6,7 +6,7 @@ const insights = [
     icon: AlertTriangle,
     title: "Low Model Agreement",
     description:
-      "Only 25.9% agreement between audio and lyrics models, reflecting how differently audio production and lyrical content express emotion",
+      "Only 25.7% agreement between audio and lyrics models, reflecting how differently audio production and lyrical content express emotion",
     color: "text-primary",
   },
   {
@@ -19,14 +19,14 @@ const insights = [
   {
     icon: Target,
     title: "Largest Mismatch: Hyped vs Sad",
-    description: "2,911 songs where audio predicts hyped but lyrics predicts sad, showing energetic production often masks negative lyrics",
+    description: "2,789 songs where audio predicts hyped but lyrics predicts sad, showing energetic production often masks negative lyrics",
     color: "text-hyped",
   },
   {
     icon: GitCompare,
     title: "Complementary Model Strengths",
     description:
-      "74.1% disagreement shows models capture different aspects - audio captures emotional tone (tempo, rhythm, intensity), lyrics capture emotional meaning (content, narrative)",
+      "74.3% disagreement shows models capture different aspects - audio captures emotional tone (tempo, rhythm, intensity), lyrics capture emotional meaning (content, narrative)",
     color: "text-chart-2",
   },
 ]

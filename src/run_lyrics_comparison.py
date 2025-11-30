@@ -53,7 +53,7 @@ def load_audio_model(model_path):
     
     if not model_path.exists():
         print(f"ERROR: Model not found at {model_path}")
-        print("Please run train_from_mapped.py first to train the audio model.")
+        print("Please run train_audio_model.py first to train the audio model.")
         return None
     
     try:
@@ -216,7 +216,7 @@ def main():
     
     if model_data is None:
         print("ERROR: Could not load audio model.")
-        print("Please run train_from_mapped.py first to train the model.")
+        print("Please run train_audio_model.py first to train the model.")
         return
     
     audio_info = get_audio_predictions(df, model_data)

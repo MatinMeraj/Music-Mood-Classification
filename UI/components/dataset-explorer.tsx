@@ -38,8 +38,8 @@ export function DatasetExplorer() {
       <Card className="p-6">
         <h3 className="text-xl font-semibold mb-6">Mood Class Distribution</h3>
         {datasetDistribution.length > 0 ? (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={datasetDistribution}>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={datasetDistribution}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.5} />
             <XAxis
               dataKey="mood"
@@ -65,29 +65,29 @@ export function DatasetExplorer() {
               }}
               labelStyle={{ color: "hsl(var(--popover-foreground))" }}
             />
-              <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                {datasetDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              {datasetDistribution.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
         ) : (
           <p className="text-center text-muted-foreground py-8">No dataset distribution data available</p>
         )}
 
         {datasetDistribution.length > 0 && total > 0 && (
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            {datasetDistribution.map((item) => (
-              <div key={item.mood} className="p-4 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground mb-1">{item.mood}</p>
-                <p className="text-2xl font-bold" style={{ color: item.color }}>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+          {datasetDistribution.map((item) => (
+            <div key={item.mood} className="p-4 rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground mb-1">{item.mood}</p>
+              <p className="text-2xl font-bold" style={{ color: item.color }}>
                   {(() => {
                     const count = Number(item.count) || 0
                     if (!isFinite(count) || count < 0) return "0"
                     return count >= 1000 ? `${(count / 1000).toFixed(0)}K` : count.toLocaleString()
                   })()}
-                </p>
+              </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {(() => {
                     const count = Number(item.count) || 0
@@ -99,9 +99,9 @@ export function DatasetExplorer() {
                     return "0.0"
                   })()}% of total
                 </p>
-              </div>
-            ))}
-          </div>
+            </div>
+          ))}
+        </div>
         )}
 
         {datasetDistribution.length > 0 && total > 0 && (() => {
@@ -116,14 +116,14 @@ export function DatasetExplorer() {
           
           if (isFinite(chillPct) && isFinite(happyPct) && (chillPct < 10 || happyPct > 30)) {
             return (
-              <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-                <h4 className="font-semibold text-sm text-yellow-700 mb-2">Class Imbalance Warning</h4>
-                <p className="text-xs text-muted-foreground">
+        <div className="mt-6 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+          <h4 className="font-semibold text-sm text-yellow-700 mb-2">Class Imbalance Warning</h4>
+          <p className="text-xs text-muted-foreground">
                   The dataset shows significant imbalance with &quot;Chill&quot; having {chillPct.toFixed(1)}% of samples compared to
                   &quot;Happy&quot; with {happyPct.toFixed(1)}%. This imbalance may affect model performance and explains some
-                  prediction biases.
-                </p>
-              </div>
+            prediction biases.
+          </p>
+        </div>
             )
           }
           return null

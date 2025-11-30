@@ -37,28 +37,29 @@ interface ConfusionData {
 }
 
 export function ModelComparison() {
-  // Hardcoded data from report: 25.9% agreement, 74.1% disagreement
+  // Hardcoded data from actual results: 25.7% agreement, 74.3% disagreement (5,135 agree, 14,865 disagree out of 20,000)
   const agreementData: AgreementData[] = [
-    { name: "Agree", value: 25.9, color: "hsl(var(--chart-2))" },
-    { name: "Disagree", value: 74.1, color: "hsl(var(--chart-4))" },
-  ]
-  
-  // Hardcoded distribution data from report (approximate percentages based on 20,000 songs)
-  // Note: Report doesn't specify exact distribution, so using balanced representation
+    { name: "Agree", value: 25.7, color: "hsl(var(--chart-2))" },
+    { name: "Disagree", value: 74.3, color: "hsl(var(--chart-4))" },
+]
+
+  // Hardcoded distribution data from actual results (percentages based on 20,000 songs)
+  // Audio: Happy 5,597 (28.0%), Chill 5,057 (25.3%), Sad 4,652 (23.3%), Hyped 4,694 (23.5%)
+  // Lyrics: Happy 6,049 (30.2%), Chill 972 (4.9%), Sad 7,513 (37.6%), Hyped 5,466 (27.3%)
   const distributionData: DistributionData[] = [
-    { mood: "Happy", audio: 25.0, lyrics: 25.0 },
-    { mood: "Chill", audio: 25.0, lyrics: 25.0 },
-    { mood: "Sad", audio: 25.0, lyrics: 25.0 },
-    { mood: "Hyped", audio: 25.0, lyrics: 25.0 },
-  ]
-  
-  // Hardcoded confusion matrix from report: largest mismatch is audio predicts hyped, lyrics predicts sad (2,911 songs)
-  // This is a simplified representation showing the key finding
+    { mood: "Happy", audio: 28.0, lyrics: 30.2 },
+    { mood: "Chill", audio: 25.3, lyrics: 4.9 },
+    { mood: "Sad", audio: 23.3, lyrics: 37.6 },
+    { mood: "Hyped", audio: 23.5, lyrics: 27.3 },
+]
+
+  // Hardcoded confusion matrix from actual results: Audio (rows) vs Lyrics (columns)
+  // Largest mismatch: Audio predicts hyped, Lyrics predicts sad (2,789 songs)
   const confusionData: ConfusionData[] = [
-    { audio: "Happy", happy: 4000, chill: 500, sad: 300, hyped: 200 },
-    { audio: "Chill", happy: 300, chill: 3500, sad: 800, hyped: 400 },
-    { audio: "Sad", happy: 500, chill: 400, sad: 4000, hyped: 100 },
-    { audio: "Hyped", happy: 800, chill: 200, sad: 2911, hyped: 1089 }, // 2,911 mismatch highlighted
+    { audio: "Happy", happy: 1859, chill: 272, sad: 1633, hyped: 1833 },
+    { audio: "Chill", happy: 2134, chill: 215, sad: 1005, hyped: 1703 },
+    { audio: "Sad", happy: 1316, chill: 295, sad: 2086, hyped: 955 },
+    { audio: "Hyped", happy: 740, chill: 190, sad: 2789, hyped: 975 }, // 2,789 mismatch highlighted
   ]
 
   // Calculate threshold for confusion matrix highlighting (75th percentile)
@@ -100,32 +101,32 @@ export function ModelComparison() {
             <h3 className="text-xl font-semibold mb-6">Overall Model Agreement</h3>
             {agreementData.length > 0 && agreementData.some(d => d.value > 0) ? (
               <>
-                <ResponsiveContainer width="100%" height={400}>
-                  <PieChart>
-                    <Pie
-                      data={agreementData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
+            <ResponsiveContainer width="100%" height={400}>
+              <PieChart>
+                <Pie
+                  data={agreementData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
                       label={({ name, value }) => {
                         const val = Number(value) || 0
                         return isFinite(val) ? `${name}: ${val.toFixed(1)}%` : `${name}: 0.0%`
                       }}
-                      outerRadius={120}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {agreementData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-                <p className="text-center text-sm text-muted-foreground mt-4 font-medium">
+                  outerRadius={120}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {agreementData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <p className="text-center text-sm text-muted-foreground mt-4 font-medium">
                   Figure 2: Agreement between main method (audio) and baseline (lyrics). {agreementData[1] && isFinite(agreementData[1].value) ? agreementData[1].value.toFixed(1) : '0.0'}% disagreement highlights
-                  complementary strengths.
-                </p>
+              complementary strengths.
+            </p>
               </>
             ) : (
               <p className="text-center text-muted-foreground py-8">No agreement data available</p>
@@ -137,8 +138,8 @@ export function ModelComparison() {
           <Card className="p-6">
             <h3 className="text-xl font-semibold mb-6">Prediction Distribution by Model</h3>
             {distributionData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={distributionData}>
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={distributionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted-foreground))" opacity={0.5} />
                 <XAxis
                   dataKey="mood"
@@ -165,10 +166,10 @@ export function ModelComparison() {
                   labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                 />
                 <Legend wrapperStyle={{ color: "hsl(var(--foreground))" }} iconType="rect" />
-                  <Bar dataKey="audio" name="Audio Model" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="lyrics" name="Lyrics Model" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+                <Bar dataKey="audio" name="Audio Model" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="lyrics" name="Lyrics Model" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
             ) : (
               <p className="text-center text-muted-foreground py-8">No distribution data available</p>
             )}
@@ -195,28 +196,28 @@ export function ModelComparison() {
                 <tbody>
                   {confusionData.length > 0 ? (
                     confusionData.map((row, i) => (
-                      <tr key={i} className="border-b border-border/50">
-                        <td className="p-3 font-semibold">{row.audio}</td>
-                        <td className="p-3 text-center">
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="p-3 font-semibold">{row.audio}</td>
+                      <td className="p-3 text-center">
                           <span className={(Number(row.happy) || 0) > threshold ? "font-bold text-happy" : ""}>
                             {Number(row.happy) || 0}
                           </span>
-                        </td>
-                        <td className="p-3 text-center">
+                      </td>
+                      <td className="p-3 text-center">
                           <span className={(Number(row.chill) || 0) > threshold ? "font-bold text-chill" : ""}>
                             {Number(row.chill) || 0}
                           </span>
-                        </td>
-                        <td className="p-3 text-center">
+                      </td>
+                      <td className="p-3 text-center">
                           <span className={
-                            (Number(row.sad) || 0) > threshold || (row.audio === "Hyped" && Number(row.sad) === 2911)
+                            (Number(row.sad) || 0) > threshold || (row.audio === "Hyped" && Number(row.sad) === 2789)
                               ? "font-bold text-sad underline" 
                               : ""
                           }>
                             {Number(row.sad) || 0}
                           </span>
-                        </td>
-                        <td className="p-3 text-center">
+                      </td>
+                      <td className="p-3 text-center">
                           <span className={(Number(row.hyped) || 0) > threshold ? "font-bold text-hyped" : ""}>
                             {Number(row.hyped) || 0}
                           </span>
@@ -234,7 +235,7 @@ export function ModelComparison() {
               </table>
             </div>
             <p className="text-center text-sm text-muted-foreground mt-4 font-medium">
-              Figure 4: Confusion matrix comparing audio vs lyrics predictions. The largest mismatch occurs when audio predicts hyped but lyrics predicts sad (2,911 songs highlighted in bold), showing that energetic production often masks emotionally negative lyrics. This low overlap reflects how differently mood is expressed by audio (emotional tone: tempo, rhythm, intensity) and lyrics (emotional meaning: content, narrative).
+              Figure 4: Confusion matrix comparing audio vs lyrics predictions. The largest mismatch occurs when audio predicts hyped but lyrics predicts sad (2,789 songs highlighted in bold), showing that energetic production often masks emotionally negative lyrics. This low overlap reflects how differently mood is expressed by audio (emotional tone: tempo, rhythm, intensity) and lyrics (emotional meaning: content, narrative).
             </p>
           </Card>
         </TabsContent>

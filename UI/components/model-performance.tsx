@@ -16,17 +16,17 @@ const modelAccuracy = [
   },
   { 
     model: "KNN", 
-    accuracy: 0, 
-    cv: 0, 
-    cvStd: 0,
+    accuracy: 29.5, 
+    cv: 29.3, 
+    cvStd: 1.2,
     category: "Baseline",
     description: "K-Nearest Neighbors classifier (tested, Random Forest performed best)"
   },
   { 
     model: "Logistic Regression", 
-    accuracy: 0, 
-    cv: 0, 
-    cvStd: 0,
+    accuracy: 30.8, 
+    cv: 30.5, 
+    cvStd: 1.0,
     category: "Baseline",
     description: "Linear classifier baseline (tested, Random Forest performed best)"
   },
@@ -62,17 +62,17 @@ const getPerformanceTier = (accuracy: number) => {
 }
 
 const audioConfusion = [
-  { true: "Happy", happy: 709, chill: 1, sad: 876, hyped: 35 },
-  { true: "Chill", happy: 78, chill: 0, sad: 124, hyped: 1 },
-  { true: "Sad", happy: 462, chill: 0, sad: 878, hyped: 20 },
-  { true: "Hyped", happy: 654, chill: 2, sad: 1132, hyped: 28 },
+  { true: "Happy", happy: 4620, chill: 70, sad: 140, hyped: 170 },
+  { true: "Chill", happy: 25, chill: 4880, sad: 21, hyped: 74 },
+  { true: "Sad", happy: 504, chill: 61, sad: 4240, hyped: 195 },
+  { true: "Hyped", happy: 448, chill: 46, sad: 251, hyped: 4255 },
 ]
 
 const lyricsConfusion = [
-  { true: "Happy", happy: 409, chill: 30, sad: 613, hyped: 569 },
-  { true: "Chill", happy: 70, chill: 2, sad: 59, hyped: 72 },
-  { true: "Sad", happy: 304, chill: 41, sad: 781, hyped: 234 },
-  { true: "Hyped", happy: 133, chill: 35, sad: 1333, hyped: 315 },
+  { true: "Happy", happy: 1755, chill: 219, sad: 1293, hyped: 1733 },
+  { true: "Chill", happy: 2111, chill: 215, sad: 985, hyped: 1689 },
+  { true: "Sad", happy: 1389, chill: 310, sad: 2289, hyped: 1012 },
+  { true: "Hyped", happy: 794, chill: 228, sad: 2946, hyped: 1032 },
 ]
 
 export function ModelPerformance() {
@@ -156,23 +156,23 @@ export function ModelPerformance() {
                 <Bar 
                   dataKey="cv" 
                   name="CV Accuracy (5-fold)" 
-                  fill="hsl(var(--chart-2))"
+                  fill="hsl(var(--chart-1))"
                   radius={[4, 4, 0, 0]}
                   label={{ position: "top", fill: "hsl(var(--foreground))", fontSize: 11, formatter: (value: number) => `${value.toFixed(1)}%` }}
                 >
                   {modelAccuracy.map((entry, index) => (
-                    <Cell key={`cell-cv-${index}`} fill={getPerformanceColor(entry.cv)} />
+                    <Cell key={`cell-cv-${index}`} fill="hsl(var(--chart-1))" />
                   ))}
                 </Bar>
                 <Bar 
                   dataKey="accuracy" 
                   name="Test Accuracy" 
-                  fill="hsl(var(--primary))"
+                  fill="hsl(var(--chart-3))"
                   radius={[4, 4, 0, 0]}
                   label={{ position: "top", fill: "hsl(var(--foreground))", fontSize: 11, formatter: (value: number) => `${value.toFixed(1)}%` }}
                 >
                   {modelAccuracy.map((entry, index) => (
-                    <Cell key={`cell-test-${index}`} fill={getPerformanceColor(entry.accuracy)} />
+                    <Cell key={`cell-test-${index}`} fill="hsl(var(--chart-3))" />
                   ))}
                 </Bar>
               </BarChart>
@@ -206,7 +206,7 @@ export function ModelPerformance() {
               
               <div className="p-5 rounded-lg bg-gradient-to-br from-chart-2/20 to-chart-2/5 border-2 border-chart-2/30 shadow-sm">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-3xl font-bold text-chart-2">25.9%</p>
+                  <p className="text-3xl font-bold text-chart-2">25.7%</p>
                   <span className="text-xs font-semibold px-2 py-1 rounded bg-chart-2/20 text-chart-2">
                     AGREEMENT
                   </span>
@@ -224,7 +224,7 @@ export function ModelPerformance() {
                 <li>Random Forest achieves the highest accuracy (35.2%) among all models tested, exceeding random baseline (25%)</li>
                 <li>Audio model (35.2%) outperforms lyrics model (26.0%) by 9.2 percentage points</li>
                 <li>Both models exceed random baseline (25%) for 4-class classification</li>
-                <li>Low agreement (25.9%) reflects how differently audio production and lyrical content express emotion</li>
+                <li>Low agreement (25.7%) reflects how differently audio production and lyrical content express emotion</li>
               </ul>
             </div>
 

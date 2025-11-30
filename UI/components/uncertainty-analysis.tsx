@@ -28,23 +28,24 @@ interface ConfidenceDistribution {
 }
 
 export function UncertaintyAnalysis() {
-  // Hardcoded data: Report mentions audio model struggles with hyped, lyrics model is more confident
-  // Using representative values consistent with report findings
+  // Hardcoded data from actual results: Low-confidence predictions by mood
+  // Audio threshold: <0.35, Lyrics threshold: <0.60
   const lowConfidenceData: LowConfidenceData[] = [
-    { mood: "Happy", audio: 15.0, lyrics: 2.0 },
-    { mood: "Chill", audio: 20.0, lyrics: 3.0 },
-    { mood: "Sad", audio: 18.0, lyrics: 2.5 },
-    { mood: "Hyped", audio: 79.8, lyrics: 4.0 }, // Report mentions audio struggles with hyped
+    { mood: "Happy", audio: 0.8, lyrics: 2.4 },
+    { mood: "Chill", audio: 1.2, lyrics: 31.9 },
+    { mood: "Sad", audio: 0.7, lyrics: 7.1 },
+    { mood: "Hyped", audio: 2.2, lyrics: 2.3 },
   ]
   
-  // Hardcoded confidence distribution: Audio model confidence clusters in 0.2-0.6 range,
-  // while lyrics model shows high confidence with most predictions above 0.8
+  // Hardcoded confidence distribution from actual results
+  // Audio model: Mean 0.710, clusters in 0.2-0.6 range with peak around 0.7-0.8, spike at 1.0
+  // Lyrics model: Mean 0.895, most predictions above 0.8, large spike at 1.0 (over 7000 songs)
   const confidenceDistribution: ConfidenceDistribution[] = [
-    { range: "0-0.2", audio: 1500, lyrics: 50 },
-    { range: "0.2-0.4", audio: 4000, lyrics: 200 },
-    { range: "0.4-0.6", audio: 3500, lyrics: 300 },
-    { range: "0.6-0.8", audio: 800, lyrics: 1500 },
-    { range: "0.8-1.0", audio: 200, lyrics: 17950 }, // Lyrics model highly confident
+    { range: "0-0.2", audio: 500, lyrics: 0 },
+    { range: "0.2-0.4", audio: 3000, lyrics: 100 },
+    { range: "0.4-0.6", audio: 4000, lyrics: 200 },
+    { range: "0.6-0.8", audio: 6000, lyrics: 2000 },
+    { range: "0.8-1.0", audio: 6500, lyrics: 15700 }, // Lyrics model highly confident, most at 1.0
   ]
 
   return (

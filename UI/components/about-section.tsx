@@ -56,7 +56,7 @@ export function AboutSection() {
           <p className="text-sm text-muted-foreground leading-relaxed">
             Models evaluated using accuracy, confusion matrices, and confidence thresholds. Among Logistic Regression, KNN,
             and Random Forest, the Random Forest performed best with 35.2% test accuracy (vs. 25% random chance). The lyrics
-            model achieved 26% accuracy with a strong bias toward sad and happy. Agreement analysis shows 25.9% agreement
+            model achieved 26% accuracy with a strong bias toward sad and happy. Agreement analysis shows 25.7% agreement
             between the two pipelines.
           </p>
         </Card>
