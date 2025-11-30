@@ -23,7 +23,9 @@ class FreeLyricsClassifier:
     
     def classify_lyrics(self, lyrics, song_name=None, artist=None):
         if not lyrics or pd.isna(lyrics) or str(lyrics).strip() == '':
-            return None, 0.0
+            # Return default mood instead of None to avoid issues in comparisons
+            # Use 'chill' as default with very low confidence
+            return 'chill', 0.1
         
         # Get sentiment scores
         scores = self.analyzer.polarity_scores(str(lyrics))

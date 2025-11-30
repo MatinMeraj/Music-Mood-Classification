@@ -74,7 +74,7 @@ def load_audio_model(path: str):
         LABEL_NAMES_FROM_JOBLIB = None
         return model
 
-    # Case 2: dict with "pipeline", "labels", ...
+    # Case 2: dict with pipeline, ...
     if isinstance(obj, dict):
         print(f"[INFO] Loaded a dict with keys: {list(obj.keys())}")
 
@@ -118,9 +118,8 @@ def load_audio_model(path: str):
     )
 
 
-# ---------------------------------------------------------
 # LOAD DATASET FOR DEMO
-# ---------------------------------------------------------
+
 
 def load_full_dataset_for_demo():
     """
@@ -163,8 +162,8 @@ def load_full_dataset_for_demo():
 
     X = df[feat_cols]
 
-    # Build metadata: title, artist, true mood
-    # normalize_features already renamed "Artist(s)" → "artists", "song" → "track_name"
+    # Build metadata
+    # and normalize_features already renamed 
     title_col = "track_name" if "track_name" in df.columns else None
     artist_col = "artists" if "artists" in df.columns else None
 
@@ -182,9 +181,8 @@ def load_full_dataset_for_demo():
     return X, meta
 
 
-# ---------------------------------------------------------
 # PREDICTION HELPERS
-# ---------------------------------------------------------
+
 
 def get_label_names(model, num_classes: int):
     """
@@ -194,7 +192,7 @@ def get_label_names(model, num_classes: int):
     if LABEL_NAMES_FROM_JOBLIB is not None and len(LABEL_NAMES_FROM_JOBLIB) == num_classes:
         return LABEL_NAMES_FROM_JOBLIB
 
-    # Fallback: model.classes_ (likely string labels)
+    # Fallback
     if hasattr(model, "classes_") and len(model.classes_) == num_classes:
         return list(model.classes_)
 
@@ -212,7 +210,7 @@ def select_high_confidence_indices(model, X, top_k: int = 2):
         raise AttributeError("Model does not support predict_proba; cannot select by confidence.")
 
     probs = model.predict_proba(X)  # shape: (N, C)
-    max_probs = probs.max(axis=1)   # shape: (N,)
+    max_probs = probs.max(axis=1)   
 
     # Sort by confidence, descending
     order = np.argsort(-max_probs)
@@ -253,9 +251,6 @@ def print_demo_result(idx, X, meta, model, probs, label_names):
     print("=" * 70 + "\n")
 
 
-# ---------------------------------------------------------
-# OPTIONAL: LYRICS (currently disabled)
-# ---------------------------------------------------------
 
 def map_compound_to_mood(compound: float) -> str:
     """
@@ -279,9 +274,7 @@ def predict_lyrics_mood(analyzer, lyrics: str):
     return mood, compound, scores
 
 
-# ---------------------------------------------------------
 # MAIN
-# ---------------------------------------------------------
 
 def main():
     # 1) Load trained model

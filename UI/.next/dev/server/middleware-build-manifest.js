@@ -1,48 +1,48 @@
 globalThis.__BUILD_MANIFEST = {
   "pages": {
     "/_app": [
-      "static/chunks/node_modules_next_dist_compiled_8ca6b690._.js",
-      "static/chunks/node_modules_next_dist_shared_lib_82dc2e9d._.js",
-      "static/chunks/node_modules_next_dist_client_d0aa886c._.js",
-      "static/chunks/node_modules_next_dist_b0a279d5._.js",
-      "static/chunks/node_modules_next_app_72f3d36f.js",
-      "static/chunks/[next]_entry_page-loader_ts_742e4b53._.js",
-      "static/chunks/node_modules_react-dom_4411d9bd._.js",
-      "static/chunks/node_modules_7f09fef0._.js",
-      "static/chunks/[root-of-the-server]__45f039c3._.js",
-      "static/chunks/pages__app_2da965e7._.js",
-      "static/chunks/turbopack-pages__app_5d693f93._.js"
+      "static/chunks/0557a_next_dist_compiled_7c964121._.js",
+      "static/chunks/0557a_next_dist_shared_lib_4156d020._.js",
+      "static/chunks/0557a_next_dist_client_c1324be9._.js",
+      "static/chunks/0557a_next_dist_ec0e71dd._.js",
+      "static/chunks/0557a_next_app_9cb57665.js",
+      "static/chunks/[next]_entry_page-loader_ts_330eff0a._.js",
+      "static/chunks/0557a_react-dom_9481a787._.js",
+      "static/chunks/0557a_97047b4e._.js",
+      "static/chunks/[root-of-the-server]__48552fa4._.js",
+      "static/chunks/1b41d_School_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_pages__app_2da965e7._.js",
+      "static/chunks/44309_School_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_pages__app_48adc0c0._.js"
     ],
     "/_error": [
-      "static/chunks/node_modules_next_dist_compiled_8ca6b690._.js",
-      "static/chunks/node_modules_next_dist_shared_lib_cf5b50a6._.js",
-      "static/chunks/node_modules_next_dist_client_d0aa886c._.js",
-      "static/chunks/node_modules_next_dist_19fd0646._.js",
-      "static/chunks/node_modules_next_error_1cfbb379.js",
-      "static/chunks/[next]_entry_page-loader_ts_43b523b5._.js",
-      "static/chunks/node_modules_react-dom_4411d9bd._.js",
-      "static/chunks/node_modules_7f09fef0._.js",
-      "static/chunks/[root-of-the-server]__092393de._.js",
-      "static/chunks/pages__error_2da965e7._.js",
-      "static/chunks/turbopack-pages__error_9f8f7792._.js"
+      "static/chunks/0557a_next_dist_compiled_7c964121._.js",
+      "static/chunks/0557a_next_dist_shared_lib_c4985932._.js",
+      "static/chunks/0557a_next_dist_client_c1324be9._.js",
+      "static/chunks/0557a_next_dist_8a5560e2._.js",
+      "static/chunks/0557a_next_error_f7f8f70a.js",
+      "static/chunks/[next]_entry_page-loader_ts_c19fa5bf._.js",
+      "static/chunks/0557a_react-dom_9481a787._.js",
+      "static/chunks/0557a_97047b4e._.js",
+      "static/chunks/[root-of-the-server]__993e3d5d._.js",
+      "static/chunks/ec4ea_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_pages__error_2da965e7._.js",
+      "static/chunks/50dc5_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_pages__error_b4887771._.js"
     ]
   },
   "devFiles": [],
   "polyfillFiles": [
-    "static/chunks/node_modules_next_dist_build_polyfills_polyfill-nomodule.js"
+    "static/chunks/0557a_next_dist_build_polyfills_polyfill-nomodule.js"
   ],
   "lowPriorityFiles": [],
   "rootMainFiles": [
-    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_bae88007._.js",
-    "static/chunks/node_modules_next_dist_compiled_react-dom_1e674e59._.js",
-    "static/chunks/node_modules_next_dist_compiled_react-server-dom-turbopack_9212ccad._.js",
-    "static/chunks/node_modules_next_dist_compiled_next-devtools_index_1dd7fb59.js",
-    "static/chunks/node_modules_next_dist_compiled_a0e4c7b4._.js",
-    "static/chunks/node_modules_next_dist_client_aaee43fe._.js",
-    "static/chunks/node_modules_next_dist_7a8122d0._.js",
-    "static/chunks/node_modules_@swc_helpers_cjs_d80fb378._.js",
-    "static/chunks/_a0ff3932._.js",
-    "static/chunks/turbopack-_45210fd5._.js"
+    "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_7685a528._.js",
+    "static/chunks/0557a_next_dist_compiled_react-dom_36ad9b7b._.js",
+    "static/chunks/0557a_next_dist_compiled_react-server-dom-turbopack_6324d123._.js",
+    "static/chunks/0557a_next_dist_compiled_next-devtools_index_526972bc.js",
+    "static/chunks/0557a_next_dist_compiled_4b3252ec._.js",
+    "static/chunks/0557a_next_dist_client_0fe43d24._.js",
+    "static/chunks/0557a_next_dist_231267ba._.js",
+    "static/chunks/0557a_@swc_helpers_cjs_0875c2bd._.js",
+    "static/chunks/13466_Documents_School_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_a0ff3932._.js",
+    "static/chunks/9f58e_Documents_School_fall'25_CMPT 310_Project_Spotify-Song-Classifier_UI_0d2c99f8._.js"
   ]
 };
 globalThis.__BUILD_MANIFEST.lowPriorityFiles = [

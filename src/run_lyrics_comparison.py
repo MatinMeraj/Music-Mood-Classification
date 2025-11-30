@@ -218,7 +218,8 @@ def main():
         return
     
     # Add audio predictions and uncertainty metrics to dataframe
-    df['audio_prediction'] = audio_info["predictions"]
+    # Ensure predictions are strings (not numpy objects) for consistency
+    df['audio_prediction'] = audio_info["predictions"].astype(str)
     df['audio_confidence'] = audio_info["confidence"]
     df['audio_second_choice'] = audio_info["second_choice"]
     df['audio_second_confidence'] = audio_info["second_confidence"]
@@ -319,9 +320,32 @@ def main():
     
     # Save results
     print("\nSaving results...")
+    
+    # Validate required columns exist
+    required_cols = ['audio_prediction', 'lyrics_prediction']
+    missing_cols = [col for col in required_cols if col not in df_with_lyrics.columns]
+    if missing_cols:
+        print(f"ERROR: Missing required columns: {missing_cols}")
+        print(f"Available columns: {list(df_with_lyrics.columns)}")
+        return
+    
+    # Check for None values in predictions (shouldn't happen after fix, but good to verify)
+    audio_none_count = df_with_lyrics['audio_prediction'].isna().sum()
+    lyrics_none_count = df_with_lyrics['lyrics_prediction'].isna().sum()
+    if audio_none_count > 0:
+        print(f"WARNING: {audio_none_count} rows have None audio_prediction")
+    if lyrics_none_count > 0:
+        print(f"WARNING: {lyrics_none_count} rows have None lyrics_prediction")
+    
+    # Ensure predictions are strings (not objects)
+    df_with_lyrics['audio_prediction'] = df_with_lyrics['audio_prediction'].astype(str)
+    df_with_lyrics['lyrics_prediction'] = df_with_lyrics['lyrics_prediction'].astype(str)
+    
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     df_with_lyrics.to_csv(OUTPUT_PATH, index=False)
-    print(f"Saved results to {OUTPUT_PATH}")
+    print(f"Saved {len(df_with_lyrics)} rows to {OUTPUT_PATH}")
+    print(f"  Columns: {len(df_with_lyrics.columns)}")
+    print(f"  Required columns present: {', '.join(required_cols)}")
 
 
 

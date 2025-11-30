@@ -61,11 +61,240 @@ load_models()
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint"""
+    predictions_file = DATA_DIR / "songs_with_predictions.csv"
     return jsonify({
         "status": "ok", 
         "audio_model_loaded": model_data is not None,
-        "lyrics_model_loaded": lyrics_classifier is not None
+        "lyrics_model_loaded": lyrics_classifier is not None,
+        "predictions_file_exists": predictions_file.exists()
     })
+
+@app.route('/api/stats', methods=['GET'])
+def get_stats():
+    """
+    Get aggregated statistics for charts and graphs
+    Returns data from songs_with_predictions.csv
+    """
+    try:
+        # Try multiple possible file locations
+        possible_files = [
+            DATA_DIR / "songs_with_predictions.csv",
+            BASE / "data" / "processed" / "songs_with_predictions.csv",
+            BASE / "songs_with_predictions.csv",
+        ]
+        
+        predictions_file = None
+        for file_path in possible_files:
+            if file_path.exists():
+                predictions_file = file_path
+                break
+        
+        if not predictions_file:
+            return jsonify({
+                "error": "Predictions file not found. Please run the prediction script first.",
+                "searched_paths": [str(p) for p in possible_files]
+            }), 404
+        
+        print(f"Loading predictions from: {predictions_file}")
+        df = pd.read_csv(predictions_file)
+        print(f"Loaded {len(df)} rows from predictions file")
+        
+        # Check required columns
+        required_cols = ['audio_prediction', 'lyrics_prediction']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return jsonify({
+                "error": f"Missing required columns: {missing_cols}",
+                "available_columns": list(df.columns)
+            }), 400
+        
+        # Normalize predictions to lowercase strings for consistent comparison
+        # Handle both string and object types, and ensure lowercase
+        df['audio_prediction'] = df['audio_prediction'].astype(str).str.lower().str.strip()
+        df['lyrics_prediction'] = df['lyrics_prediction'].astype(str).str.lower().str.strip()
+        
+        # Replace 'nan' strings (from NaN conversion) with actual NaN
+        df['audio_prediction'] = df['audio_prediction'].replace('nan', pd.NA)
+        df['lyrics_prediction'] = df['lyrics_prediction'].replace('nan', pd.NA)
+        
+        # Filter out rows with NaN predictions for calculations
+        df_valid = df.dropna(subset=['audio_prediction', 'lyrics_prediction']).copy()
+        total = len(df_valid)
+        
+        if total == 0:
+            return jsonify({
+                "error": "No valid predictions found in file (all rows have NaN predictions)",
+                "total_rows": len(df)
+            }), 400
+        
+        # Calculate agreement statistics (only on valid rows)
+        agreement = (df_valid['audio_prediction'] == df_valid['lyrics_prediction']).sum()
+        agreement_pct = (agreement / total * 100) if total > 0 else 0
+        
+        # Distribution by mood (only on valid rows, exclude NaN)
+        audio_dist = df_valid['audio_prediction'].value_counts(normalize=True).to_dict()
+        lyrics_dist = df_valid['lyrics_prediction'].value_counts(normalize=True).to_dict()
+        
+        moods = ['happy', 'chill', 'sad', 'hyped']
+        distribution_data = []
+        for mood in moods:
+            distribution_data.append({
+                "mood": mood.capitalize(),
+                "audio": round(audio_dist.get(mood, 0) * 100, 1),
+                "lyrics": round(lyrics_dist.get(mood, 0) * 100, 1)
+            })
+        
+        # Confusion matrix (audio vs lyrics) - only on valid rows
+        confusion_data = []
+        for audio_mood in moods:
+            row = {"audio": audio_mood.capitalize()}
+            for lyrics_mood in moods:
+                count = len(df_valid[
+                    (df_valid['audio_prediction'] == audio_mood) & 
+                    (df_valid['lyrics_prediction'] == lyrics_mood)
+                ])
+                row[lyrics_mood] = int(count)
+            confusion_data.append(row)
+        
+        # Low confidence statistics (only on valid rows with valid confidence values)
+        low_conf_data = []
+        if 'audio_confidence' in df_valid.columns and 'lyrics_confidence' in df_valid.columns:
+            # Filter out NaN confidence values for accurate calculations
+            df_with_conf = df_valid.dropna(subset=['audio_confidence', 'lyrics_confidence']).copy()
+            
+            for mood in moods:
+                audio_mood_df = df_with_conf[df_with_conf['audio_prediction'] == mood]
+                lyrics_mood_df = df_with_conf[df_with_conf['lyrics_prediction'] == mood]
+                
+                # Calculate percentage with low confidence (only on rows with valid confidence)
+                audio_pct = (audio_mood_df['audio_confidence'] < AUDIO_LOW_CONF_THRESHOLD).mean() * 100 if len(audio_mood_df) > 0 else 0
+                lyrics_pct = (lyrics_mood_df['lyrics_confidence'] < LYRICS_LOW_CONF_THRESHOLD).mean() * 100 if len(lyrics_mood_df) > 0 else 0
+                
+                low_conf_data.append({
+                    "mood": mood.capitalize(),
+                    "audio": round(audio_pct, 1),
+                    "lyrics": round(lyrics_pct, 1)
+                })
+        
+        # Confidence distribution (only on valid rows with valid confidence values)
+        confidence_dist = []
+        if 'audio_confidence' in df_valid.columns and 'lyrics_confidence' in df_valid.columns:
+            # Filter out NaN confidence values
+            df_with_conf = df_valid.dropna(subset=['audio_confidence', 'lyrics_confidence']).copy()
+            
+            bins = [(0, 0.2), (0.2, 0.4), (0.4, 0.6), (0.6, 0.8), (0.8, 1.0)]
+            for i, (low, high) in enumerate(bins):
+                # For the last bin, include values equal to 1.0
+                if i == len(bins) - 1:
+                    audio_count = len(df_with_conf[(df_with_conf['audio_confidence'] >= low) & (df_with_conf['audio_confidence'] <= high)])
+                    lyrics_count = len(df_with_conf[(df_with_conf['lyrics_confidence'] >= low) & (df_with_conf['lyrics_confidence'] <= high)])
+                else:
+                    audio_count = len(df_with_conf[(df_with_conf['audio_confidence'] >= low) & (df_with_conf['audio_confidence'] < high)])
+                    lyrics_count = len(df_with_conf[(df_with_conf['lyrics_confidence'] >= low) & (df_with_conf['lyrics_confidence'] < high)])
+                
+                confidence_dist.append({
+                    "range": f"{low}-{high}",
+                    "audio": int(audio_count),
+                    "lyrics": int(lyrics_count)
+                })
+        
+        return jsonify({
+            "agreement": {
+                "agree": round(agreement_pct, 1),
+                "disagree": round(100 - agreement_pct, 1),
+                "total": int(total)
+            },
+            "distribution": distribution_data,
+            "confusion": confusion_data,
+            "lowConfidence": low_conf_data,
+            "confidenceDistribution": confidence_dist
+        })
+        
+    except Exception as e:
+        print(f"Error getting stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@app.route('/api/dataset', methods=['GET'])
+def get_dataset_stats():
+    """
+    Get dataset distribution statistics
+    """
+    try:
+        # Try to find the main dataset file
+        possible_files = [
+            DATA_DIR / "songs_mapped.csv",
+            DATA_DIR / "songs_mapped_20k_balanced.csv",
+            BASE / "data" / "processed" / "songs_mapped.csv",
+        ]
+        
+        dataset_file = None
+        for file_path in possible_files:
+            if file_path.exists():
+                dataset_file = file_path
+                break
+        
+        if not dataset_file:
+            return jsonify({
+                "error": "Dataset file not found",
+                "searched_paths": [str(p) for p in possible_files]
+            }), 404
+        
+        df = pd.read_csv(dataset_file, nrows=100000)  # Sample for speed
+        
+        if 'mood' not in df.columns:
+            return jsonify({
+                "error": "Dataset does not contain 'mood' column",
+                "available_columns": list(df.columns)
+            }), 400
+        
+        # Filter out NaN values and normalize mood to lowercase for consistent counting
+        df_valid = df.dropna(subset=['mood']).copy()
+        if len(df_valid) == 0:
+            return jsonify({
+                "error": "Dataset contains no valid mood values",
+                "total_rows": len(df)
+            }), 400
+        
+        # Normalize mood values to lowercase for consistent counting
+        df_valid['mood'] = df_valid['mood'].astype(str).str.lower().str.strip()
+        
+        # Filter to only valid mood values
+        valid_moods = ['happy', 'chill', 'sad', 'hyped']
+        df_valid = df_valid[df_valid['mood'].isin(valid_moods)]
+        
+        if len(df_valid) == 0:
+            return jsonify({
+                "error": "Dataset contains no valid mood values (expected: happy, chill, sad, hyped)",
+                "total_rows": len(df),
+                "sample_moods": df['mood'].dropna().unique().tolist()[:10] if 'mood' in df.columns else []
+            }), 400
+        
+        # Calculate distribution
+        mood_counts = df_valid['mood'].value_counts().to_dict()
+        total = len(df_valid)
+        
+        moods = ['happy', 'chill', 'sad', 'hyped']
+        distribution = []
+        for mood in moods:
+            count = mood_counts.get(mood, 0)
+            distribution.append({
+                "mood": mood.capitalize(),
+                "count": int(count),
+                "percentage": round((count / total * 100) if total > 0 else 0, 1)
+            })
+        
+        return jsonify({
+            "total": int(total),
+            "distribution": distribution
+        })
+        
+    except Exception as e:
+        print(f"Error getting dataset stats: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
@@ -143,13 +372,31 @@ def predict():
                 
                 # Get prediction
                 audio_info = get_audio_predictions(df, model_data)
-                if audio_info:
-                    confidence = float(audio_info["confidence"][0])
+                if audio_info and "predictions" in audio_info and "confidence" in audio_info:
+                    # Handle both array and single value cases
+                    if isinstance(audio_info["confidence"], (list, np.ndarray)):
+                        confidence = float(audio_info["confidence"][0])
+                        prediction = str(audio_info["predictions"][0])
+                    else:
+                        confidence = float(audio_info["confidence"])
+                        prediction = str(audio_info["predictions"])
+                    
+                    # Normalize mood to lowercase for consistency
+                    mood_normalized = str(prediction).lower().strip()
+                    
+                    # Validate mood is one of expected values
+                    valid_moods = ['happy', 'chill', 'sad', 'hyped']
+                    if mood_normalized not in valid_moods:
+                        print(f"Warning: Unexpected mood value '{mood_normalized}', defaulting to 'happy'")
+                        mood_normalized = 'happy'
+                    
                     audio_result = {
-                        "mood": str(audio_info["predictions"][0]),
+                        "mood": mood_normalized,
                         "confidence": confidence,
                         "lowConfidence": confidence < AUDIO_LOW_CONF_THRESHOLD
                     }
+                else:
+                    raise ValueError("Invalid response from get_audio_predictions")
             except Exception as e:
                 print(f"Error getting audio prediction: {e}")
                 return jsonify({"error": f"Audio prediction failed: {str(e)}"}), 500
@@ -162,8 +409,17 @@ def predict():
             try:
                 mood, confidence = lyrics_classifier.classify_lyrics(lyrics, song_name, artist_name)
                 if mood:
+                    # Normalize mood to lowercase for consistency
+                    mood_normalized = str(mood).lower().strip()
+                    
+                    # Validate mood is one of expected values
+                    valid_moods = ['happy', 'chill', 'sad', 'hyped']
+                    if mood_normalized not in valid_moods:
+                        print(f"Warning: Unexpected lyrics mood value '{mood_normalized}', defaulting to 'happy'")
+                        mood_normalized = 'happy'
+                    
                     lyrics_result = {
-                        "mood": mood,
+                        "mood": mood_normalized,
                         "confidence": float(confidence),
                         "lowConfidence": float(confidence) < LYRICS_LOW_CONF_THRESHOLD
                     }
@@ -171,15 +427,20 @@ def predict():
                 print(f"Error getting lyrics prediction: {e}")
                 # Don't fail if lyrics prediction fails, just skip it
         
-        # Check if predictions agree
+        # Check if predictions agree (both moods are normalized to lowercase)
         agree = False
         if audio_result and lyrics_result:
+            # Both moods are already normalized to lowercase, so direct comparison is safe
             agree = audio_result["mood"] == lyrics_result["mood"]
         elif not lyrics_result:
             # If no lyrics prediction, just return audio
             agree = None
         
         # Build response
+        # Ensure audio_result exists (should always exist if we got here)
+        if not audio_result:
+            return jsonify({"error": "Failed to generate audio prediction"}), 500
+        
         response = {
             "song": song_name,
             "artist": artist_name,
@@ -187,9 +448,11 @@ def predict():
             "agree": agree
         }
         
+        # Always include lyrics in response, even if None (for consistent API contract)
         if lyrics_result:
             response["lyrics"] = lyrics_result
         else:
+            # Return None explicitly for missing lyrics prediction
             response["lyrics"] = None
         
         return jsonify(response)
@@ -340,8 +603,10 @@ if __name__ == '__main__':
     print(f"Audio model loaded: {model_data is not None}")
     print(f"Lyrics classifier loaded: {lyrics_classifier is not None}")
     print("\nAPI Endpoints:")
-    print("  GET  /api/health  - Health check")
-    print("  POST /api/predict - Predict song mood")
+    print("  GET  /api/health   - Health check")
+    print("  GET  /api/stats    - Get statistics for charts")
+    print("  GET  /api/dataset  - Get dataset distribution")
+    print("  POST /api/predict  - Predict song mood")
     print("\nStarting server on http://localhost:8000")
     print("=" * 60)
     app.run(debug=True, port=8000, host='0.0.0.0')

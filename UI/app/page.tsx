@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Hero } from "@/components/hero"
 import { PredictionInterface } from "@/components/prediction-interface"
 import { ModelComparison } from "@/components/model-comparison"
