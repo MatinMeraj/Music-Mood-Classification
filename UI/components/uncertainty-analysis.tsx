@@ -120,6 +120,16 @@ export function UncertaintyAnalysis() {
                     <p className="text-xs text-muted-foreground">Low-confidence rates typically &lt; 5% for most moods</p>
                   </div>
                 </div>
+                <div className="mt-4 p-4 rounded-lg bg-chill/10 border border-chill/30">
+                  <p className="text-sm font-semibold text-chill mb-2">Why "Chill" Has High Low-Confidence (31.9%)</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    The lyrics model struggles with "chill" because VADER sentiment analysis is designed for positive/negative 
+                    emotion detection, not energy/tempo classification. "Chill" music often has neutral or ambiguous lyrics 
+                    that don't strongly signal any emotion. When VADER gives a weak sentiment signal (compound score between 
+                    -0.3 and 0.5), it defaults to "chill" but with low confidence because the sentiment signal is ambiguous. 
+                    This explains why the model predicts "chill" rarely (only 4.9% of songs) but has high uncertainty when it does.
+                  </p>
+                </div>
                 <p className="text-center text-sm text-muted-foreground mt-4 font-medium">
                   Figure 5: Low-confidence predictions by mood. Audio model struggles with &apos;hyped&apos; ({(() => {
                     const hypedItem = lowConfidenceData.find(d => d.mood === "Hyped")
