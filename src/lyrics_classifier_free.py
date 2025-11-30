@@ -1,7 +1,3 @@
-"""
-FREE Lyrics Classifier using VADER Sentiment
-No API needed, no cost, runs locally!
-"""
 
 import pandas as pd
 from pathlib import Path
@@ -17,10 +13,7 @@ except ImportError:
 
 
 class FreeLyricsClassifier:
-    """
-    FREE lyrics classifier using VADER sentiment analysis
-    No API needed, no cost!
-    """
+
     
     def __init__(self):
         if not VADER_AVAILABLE:
@@ -31,20 +24,10 @@ class FreeLyricsClassifier:
         self.api_calls = 0  # Keep for compatibility
     
     def classify_lyrics(self, lyrics, song_name=None, artist=None):
-        """
-        Classify song mood based on lyrics using VADER sentiment.
         
-        Args:
-            lyrics: Song lyrics
-            song_name: Optional song name
-            artist: Optional artist name
-        
-        Returns:
-            predicted_mood: One of ['happy', 'chill', 'sad', 'hyped']
-            confidence: Confidence score (0-1)
-        """
         if not lyrics or pd.isna(lyrics) or str(lyrics).strip() == '':
-            return None, 0.0
+            #return None, 0.0
+            return 'chill', 0.1  # Return default mood with low confidence instead of None
         
         # Get sentiment scores
         scores = self.analyzer.polarity_scores(str(lyrics))
@@ -89,15 +72,21 @@ class FreeLyricsClassifier:
                 mood = 'hyped'
                 confidence = min(0.9, abs(compound) + 0.2)
         
+        # Ensure confidence is in valid range [0, 1] and not NaN
+        confidence = max(0.0, min(1.0, float(confidence)))
+        if confidence != confidence:  # NaN check
+            confidence = 0.1  # Default low confidence
+        
+        # Ensure mood is valid
+        if mood not in self.mood_labels:
+            mood = 'chill'  # Default mood
+        
         self.api_calls += 1
         return mood, confidence
     
     def classify_dataset(self, df, lyrics_column='text', song_column='track_name', 
                         artist_column='artists', max_songs=None, delay=0):
-        """
-        Classify multiple songs from dataset.
-        FREE version - no delay needed!
-        """
+        
         result_df = df.copy()
         
         if lyrics_column not in df.columns:
@@ -147,15 +136,12 @@ class FreeLyricsClassifier:
 
 
 def main():
-    """Test the free classifier"""
-    print("=" * 60)
-    print("FREE Lyrics Classifier (VADER Sentiment)")
-    print("=" * 60)
-    print()
+
+    print(" Lyrics Classifier VADER")
+
     
     if not VADER_AVAILABLE:
-        print("❌ VADER not installed!")
-        print("Install it with: pip install vaderSentiment")
+        print("VADER not installed!")
         return
     
     # Initialize classifier
@@ -173,13 +159,10 @@ def main():
     print()
     for lyrics, expected in test_cases:
         mood, confidence = classifier.classify_lyrics(lyrics)
-        match = "✅" if mood == expected else "⚠️"
+        match = "good" if mood == expected else "bad"
         print(f"{match} Expected: {expected:6s} | Got: {mood:6s} | Confidence: {confidence:.2f}")
     
-    print()
-    print("✅ FREE classifier is working!")
-    print("💰 Cost: $0.00 (runs locally, no API needed)")
-    print()
+
 
 
 if __name__ == "__main__":

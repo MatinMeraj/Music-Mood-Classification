@@ -18,9 +18,7 @@ export function AboutSection() {
           </div>
           <h3 className="text-xl font-semibold">Audio Feature Model</h3>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Extracts 9 audio features from Spotify API: tempo, energy, valence, loudness, danceability, speechiness,
-            acousticness, instrumentalness, and liveness. Uses Random Forest classifier with hyperparameter tuning for
-            optimal performance.
+            Uses 9 audio features: tempo, energy, valence, loudness, danceability, speechiness, acousticness, instrumentalness, and liveness. Pipeline: Input → Imputation → Standardization → Model Training → Model Prediction. Random Forest classifier achieved 35.2% test accuracy (vs. 25% random chance), outperforming Logistic Regression and KNN.
           </p>
         </Card>
 
