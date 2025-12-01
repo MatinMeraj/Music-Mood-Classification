@@ -1,8 +1,3 @@
-"""
-Compare Audio-based Predictions vs Lyrics-based Predictions
-Simple comparison script for Milestone 2
-"""
-
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -13,28 +8,14 @@ from sklearn.metrics import confusion_matrix, accuracy_score, classification_rep
 # Simple comparison function
 def compare_predictions(df, audio_pred_col='audio_prediction', lyrics_pred_col='lyrics_prediction', 
                        true_label_col='mood'):
-    """
-    Compare audio predictions vs lyrics predictions.
-    
-    Args:
-        df: DataFrame with predictions
-        audio_pred_col: Column name with audio model predictions
-        lyrics_pred_col: Column name with lyrics model predictions
-        true_label_col: Column name with true labels (if available)
-    
-    Returns:
-        Dictionary with comparison results
-    """
-    print("=" * 60)
     print("Comparing Audio vs Lyrics Predictions")
-    print("=" * 60)
-    print()
+ 
     
     # Filter out rows with missing predictions
     df_clean = df.dropna(subset=[audio_pred_col, lyrics_pred_col])
     
     if len(df_clean) == 0:
-        print("ERROR: No rows with both audio and lyrics predictions found!")
+        print("ERROR: No rows with both audio and lyrics predictions found")
         return None
     
     print(f"Comparing {len(df_clean)} songs with both predictions...")
@@ -97,15 +78,6 @@ def compare_predictions(df, audio_pred_col='audio_prediction', lyrics_pred_col='
 def create_comparison_visualization(df, audio_pred_col='audio_prediction', 
                                    lyrics_pred_col='lyrics_prediction', 
                                    save_path='audio_lyrics_comparison.png'):
-    """
-    Create visualization showing where audio and lyrics predictions agree/disagree.
-    
-    Args:
-        df: DataFrame with predictions
-        audio_pred_col: Column name with audio predictions
-        lyrics_pred_col: Column name with lyrics predictions
-        save_path: Path to save the visualization
-    """
     print(f"Creating visualization...")
     
     # Filter out rows with missing predictions
@@ -121,7 +93,7 @@ def create_comparison_visualization(df, audio_pred_col='audio_prediction',
     
     moods = ['happy', 'chill', 'sad', 'hyped']
     
-    # 1. Agreement vs Disagreement (pie chart)
+    # Agreement vs Disagreement (pie chart)
     agreement = (df_clean[audio_pred_col] == df_clean[lyrics_pred_col]).sum()
     disagreement = len(df_clean) - agreement
     
@@ -134,7 +106,7 @@ def create_comparison_visualization(df, audio_pred_col='audio_prediction',
     )
     axes[0, 0].set_title('Agreement vs Disagreement')
     
-    # 2. Confusion Matrix (Audio predictions vs Lyrics predictions)
+    # Confusion Matrix (Audio predictions vs Lyrics predictions)
     cm = confusion_matrix(df_clean[audio_pred_col], df_clean[lyrics_pred_col], labels=moods)
     sns.heatmap(
         cm,
@@ -149,7 +121,7 @@ def create_comparison_visualization(df, audio_pred_col='audio_prediction',
     axes[0, 1].set_xlabel('Lyrics Prediction')
     axes[0, 1].set_ylabel('Audio Prediction')
     
-    # 3. Distribution of predictions
+    # Distribution of predictions
     audio_counts = df_clean[audio_pred_col].value_counts().reindex(moods, fill_value=0)
     lyrics_counts = df_clean[lyrics_pred_col].value_counts().reindex(moods, fill_value=0)
     
@@ -166,7 +138,7 @@ def create_comparison_visualization(df, audio_pred_col='audio_prediction',
     axes[1, 0].legend()
     axes[1, 0].grid(True, alpha=0.3, axis='y')
     
-    # 4. Agreement by mood
+    #  Agreement by mood
     agreement_by_mood = []
     for mood in moods:
         mood_df = df_clean[df_clean[audio_pred_col] == mood]
@@ -195,9 +167,6 @@ def create_comparison_visualization(df, audio_pred_col='audio_prediction',
 
 
 def main():
-    """
-    Example usage of the comparison script.
-    """
     print("=" * 60)
     print("Audio vs Lyrics Predictions Comparison")
     print("=" * 60)

@@ -60,7 +60,6 @@ load_models()
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    """Health check endpoint"""
     return jsonify({
         "status": "ok", 
         "audio_model_loaded": model_data is not None,
@@ -69,39 +68,6 @@ def health():
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
-    """
-    Predict mood for a song
-    
-    Request body:
-    {
-        "song": "string",      # Required: song name
-        "artist": "string",    # Optional: artist name
-        "audio_features": {    # Optional: if not provided, will try to look up in dataset
-            "tempo": float,
-            "energy": float,
-            "valence": float,
-            ...
-        },
-        "lyrics": "string"     # Optional: lyrics text
-    }
-    
-    Response:
-    {
-        "song": string,
-        "artist": string,
-        "audio": {
-            "mood": "happy" | "chill" | "sad" | "hyped",
-            "confidence": float,
-            "lowConfidence": boolean
-        },
-        "lyrics": {
-            "mood": "happy" | "chill" | "sad" | "hyped",
-            "confidence": float,
-            "lowConfidence": boolean
-        },
-        "agree": boolean
-    }
-    """
     try:
         data = request.json
         
@@ -201,16 +167,6 @@ def predict():
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 def find_song_in_dataset(song_name, artist_name):
-    """
-    Try to find song in dataset and return audio features
-    
-    Args:
-        song_name: Name of the song
-        artist_name: Name of the artist (optional)
-    
-    Returns:
-        Dict of audio features or None if not found
-    """
     # Try balanced sample first, then full dataset
     for file_name in ["songs_balanced_sample.csv", "songs_mapped.csv", "songs_with_predictions.csv"]:
         file_path = DATA_DIR / file_name
@@ -287,12 +243,6 @@ def find_song_in_dataset(song_name, artist_name):
     return None
 
 def find_lyrics_in_dataset(song_name, artist_name):
-    """
-    Try to find lyrics in dataset
-    
-    Returns:
-        Lyrics text or None if not found
-    """
     # Try files that might have lyrics
     for file_name in ["songs_mapped.csv", "songs_with_predictions.csv", "songs.csv"]:
         file_path = DATA_DIR / file_name if DATA_DIR.exists() else BASE / file_name
@@ -335,35 +285,6 @@ def find_lyrics_in_dataset(song_name, artist_name):
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    """
-    Get aggregated statistics for model comparison charts
-    
-    Response:
-    {
-        "agreement": {
-            "agree": int,
-            "disagree": int,
-            "agree_pct": float,
-            "disagree_pct": float
-        },
-        "distribution": [
-            {"mood": "happy", "audio": float, "lyrics": float},
-            ...
-        ],
-        "confusion": [
-            {"audio": "happy", "happy": int, "chill": int, "sad": int, "hyped": int},
-            ...
-        ],
-        "lowConfidence": [
-            {"mood": "happy", "audio": float, "lyrics": float},
-            ...
-        ],
-        "confidenceDistribution": [
-            {"range": "0-0.2", "audio": int, "lyrics": int},
-            ...
-        ]
-    }
-    """
     try:
         # Try to load songs_with_predictions.csv
         predictions_file = DATA_DIR / "songs_with_predictions.csv"
@@ -402,18 +323,17 @@ def get_stats():
                 "error": f"Failed to normalize predictions: {str(e)}"
             }), 500
         
-        # Replace 'nan' strings and invalid values with actual NaN
+
         df_valid['audio_prediction'] = df_valid['audio_prediction'].replace(['nan', 'none', 'null', ''], pd.NA)
         df_valid['lyrics_prediction'] = df_valid['lyrics_prediction'].replace(['nan', 'none', 'null', ''], pd.NA)
-        
-        # Filter out invalid mood values
+      
         valid_moods = ['happy', 'chill', 'sad', 'hyped']
         df_valid = df_valid[
             df_valid['audio_prediction'].isin(valid_moods) & 
             df_valid['lyrics_prediction'].isin(valid_moods)
         ].copy()
         
-        # Filter again after normalization
+    
         df_valid = df_valid.dropna(subset=['audio_prediction', 'lyrics_prediction'])
         
         if len(df_valid) == 0:
@@ -422,19 +342,19 @@ def get_stats():
                 "hint": "Check that predictions are one of: happy, chill, sad, hyped"
             }), 400
         
-        # 1. Calculate agreement
+        #              Calculate agreement
         agreement_mask = df_valid['audio_prediction'] == df_valid['lyrics_prediction']
         agreement_count = int(agreement_mask.sum())
         total_count = len(df_valid)
         if total_count > 0:
             agreement_pct = float((agreement_count / total_count) * 100)
-            # Ensure percentage is valid (not NaN or Infinity)
-            if not (0 <= agreement_pct <= 100) or not (agreement_pct == agreement_pct):  # NaN check
+      
+            if not (0 <= agreement_pct <= 100) or not (agreement_pct == agreement_pct): 
                 agreement_pct = 0.0
         else:
             agreement_pct = 0.0
         
-        # 2. Calculate distribution by mood
+        #calculate distribution by mood
         valid_moods = ['happy', 'chill', 'sad', 'hyped']
         
         # Filter to only valid moods before calculating distribution
@@ -445,27 +365,27 @@ def get_stats():
         for mood in valid_moods:
             if mood in audio_dist.index:
                 audio_pct = float(audio_dist.get(mood, 0))
-                # Validate: not NaN, not Infinity, in valid range
-                if not (audio_pct == audio_pct) or not (-1000 <= audio_pct <= 1000):  # NaN and range check
+                
+                if not (audio_pct == audio_pct) or not (-1000 <= audio_pct <= 1000):  
                     audio_pct = 0.0
             else:
                 audio_pct = 0.0
             
             if mood in lyrics_dist.index:
                 lyrics_pct = float(lyrics_dist.get(mood, 0))
-                # Validate: not NaN, not Infinity, in valid range
-                if not (lyrics_pct == lyrics_pct) or not (-1000 <= lyrics_pct <= 1000):  # NaN and range check
+                # Validate
+                if not (lyrics_pct == lyrics_pct) or not (-1000 <= lyrics_pct <= 1000):  
                     lyrics_pct = 0.0
             else:
                 lyrics_pct = 0.0
             
             distribution.append({
                 "mood": mood.capitalize(),
-                "audio": max(0.0, min(100.0, audio_pct)),  # Clamp to 0-100
-                "lyrics": max(0.0, min(100.0, lyrics_pct))  # Clamp to 0-100
+                "audio": max(0.0, min(100.0, audio_pct)),  
+                "lyrics": max(0.0, min(100.0, lyrics_pct))  
             })
         
-        # 3. Calculate confusion matrix
+        # calculate confusion matrix
         confusion = []
         for audio_mood in valid_moods:
             audio_mask = df_valid['audio_prediction'] == audio_mood
@@ -491,18 +411,15 @@ def get_stats():
                     "hyped": 0
                 })
         
-        # 4. Calculate low confidence by mood
+        #calculate low confidence by mood
         low_confidence = []
         if 'audio_confidence' in df_valid.columns and 'lyrics_confidence' in df_valid.columns:
-            # Convert confidence columns to numeric, handling any type issues
             df_conf = df_valid.copy()
             df_conf['audio_confidence'] = pd.to_numeric(df_conf['audio_confidence'], errors='coerce')
             df_conf['lyrics_confidence'] = pd.to_numeric(df_conf['lyrics_confidence'], errors='coerce')
             
-            # Drop rows with invalid confidence values
             df_conf = df_conf.dropna(subset=['audio_confidence', 'lyrics_confidence']).copy()
             
-            # Ensure confidence values are in valid range [0, 1]
             df_conf['audio_confidence'] = df_conf['audio_confidence'].clip(0, 1)
             df_conf['lyrics_confidence'] = df_conf['lyrics_confidence'].clip(0, 1)
             
@@ -514,7 +431,7 @@ def get_stats():
                 if audio_total > 0:
                     audio_low = int((audio_subset['audio_confidence'] < AUDIO_LOW_CONF_THRESHOLD).sum())
                     audio_pct = float((audio_low / audio_total) * 100)
-                    # Validate: not NaN, not Infinity
+                    # Validate
                     if not (audio_pct == audio_pct) or not (0 <= audio_pct <= 100):
                         audio_pct = 0.0
                 else:
@@ -527,7 +444,7 @@ def get_stats():
                 if lyrics_total > 0:
                     lyrics_low = int((lyrics_subset['lyrics_confidence'] < LYRICS_LOW_CONF_THRESHOLD).sum())
                     lyrics_pct = float((lyrics_low / lyrics_total) * 100)
-                    # Validate: not NaN, not Infinity
+                    
                     if not (lyrics_pct == lyrics_pct) or not (0 <= lyrics_pct <= 100):
                         lyrics_pct = 0.0
                 else:
@@ -539,7 +456,7 @@ def get_stats():
                     "lyrics": float(lyrics_pct)
                 })
         else:
-            # If confidence columns don't exist, return zeros
+            # If confidence columns don't exist return zeros
             for mood in valid_moods:
                 low_confidence.append({
                     "mood": mood.capitalize(),
@@ -547,10 +464,9 @@ def get_stats():
                     "lyrics": 0.0
                 })
         
-        # 5. Calculate confidence distribution
+        # calculate confidence distribution
         confidence_distribution = []
         if 'audio_confidence' in df_valid.columns and 'lyrics_confidence' in df_valid.columns:
-            # Convert confidence columns to numeric, handling any type issues
             df_conf = df_valid.copy()
             df_conf['audio_confidence'] = pd.to_numeric(df_conf['audio_confidence'], errors='coerce')
             df_conf['lyrics_confidence'] = pd.to_numeric(df_conf['lyrics_confidence'], errors='coerce')
@@ -563,7 +479,6 @@ def get_stats():
             df_conf['lyrics_confidence'] = df_conf['lyrics_confidence'].clip(0, 1)
             
             if len(df_conf) > 0:
-                # Define bins and labels - use 1.01 to include 1.0 in last bin
                 bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.01]
                 labels = ["0-0.2", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"]
                 
@@ -580,8 +495,8 @@ def get_stats():
                         audio_count = int(audio_counts.get(label, 0)) if label in audio_counts.index else 0
                         lyrics_count = int(lyrics_counts.get(label, 0)) if label in lyrics_counts.index else 0
                         # Ensure non-negative integers
-                        audio_count = max(0, audio_count) if not (audio_count != audio_count) else 0  # NaN check
-                        lyrics_count = max(0, lyrics_count) if not (lyrics_count != lyrics_count) else 0  # NaN check
+                        audio_count = max(0, audio_count) if not (audio_count != audio_count) else 0 
+                        lyrics_count = max(0, lyrics_count) if not (lyrics_count != lyrics_count) else 0  
                         confidence_distribution.append({
                             "range": str(label),
                             "audio": audio_count,
@@ -605,7 +520,7 @@ def get_stats():
                         "lyrics": 0
                     })
         else:
-            # If confidence columns don't exist, return zeros
+            # If confidence columns don't exist then return zeros
             for label in ["0-0.2", "0.2-0.4", "0.4-0.6", "0.6-0.8", "0.8-1.0"]:
                 confidence_distribution.append({
                     "range": label,
@@ -613,7 +528,7 @@ def get_stats():
                     "lyrics": 0
                 })
         
-        # Ensure all arrays are non-empty and valid
+        #ensure all arrays are non   empty and valid
         if not distribution:
             distribution = [{"mood": mood.capitalize(), "audio": 0.0, "lyrics": 0.0} for mood in valid_moods]
         if not confusion:
@@ -625,7 +540,7 @@ def get_stats():
         
         # Ensure disagree_pct is valid
         disagree_pct = float(100 - agreement_pct)
-        if not (disagree_pct == disagree_pct) or not (0 <= disagree_pct <= 100):  # NaN and range check
+        if not (disagree_pct == disagree_pct) or not (0 <= disagree_pct <= 100):  
             disagree_pct = max(0.0, min(100.0, 100 - agreement_pct))
         
         return jsonify({
@@ -649,18 +564,6 @@ def get_stats():
 
 @app.route('/api/dataset', methods=['GET'])
 def get_dataset():
-    """
-    Get dataset distribution statistics
-    
-    Response:
-    {
-        "distribution": [
-            {"mood": "happy", "count": int, "percentage": float},
-            ...
-        ],
-        "total": int
-    }
-    """
     try:
         # Try to load dataset with mood labels
         dataset_files = [
@@ -686,7 +589,7 @@ def get_dataset():
                 "tried_files": [str(f) for f in dataset_files]
             }), 404
         
-        # Filter valid moods and normalize
+   
         valid_moods = ['happy', 'chill', 'sad', 'hyped']
         df_valid = df.dropna(subset=['mood']).copy()
         df_valid['mood'] = df_valid['mood'].astype(str).str.lower().str.strip()
@@ -723,9 +626,8 @@ def get_dataset():
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    print("=" * 60)
+
     print("Spotify Song Mood Classifier API Server")
-    print("=" * 60)
     print(f"Audio model loaded: {model_data is not None}")
     print(f"Lyrics classifier loaded: {lyrics_classifier is not None}")
     print("\nAPI Endpoints:")
@@ -734,6 +636,6 @@ if __name__ == '__main__':
     print("  GET  /api/stats    - Get model comparison statistics")
     print("  GET  /api/dataset   - Get dataset distribution")
     print("\nStarting server on http://localhost:8000")
-    print("=" * 60)
+
     app.run(debug=True, port=8000, host='0.0.0.0')
 

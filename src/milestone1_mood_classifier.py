@@ -223,7 +223,7 @@ class MoodClassifier:
                           ha='center', va='center', transform=axes[1,1].transAxes)
             axes[1,1].set_title('Feature Importance')
         
-        # 6. Model performance by mood
+        # Model performance by mood
         mood_accuracies = []
         for mood in self.mood_labels:
             mood_mask = (y_test == mood)

@@ -27,7 +27,7 @@ class FreeLyricsClassifier:
         
         if not lyrics or pd.isna(lyrics) or str(lyrics).strip() == '':
             #return None, 0.0
-            return 'chill', 0.1  # Return default mood with low confidence instead of None
+            return 'chill', 0.1  
         
         # Get sentiment scores
         scores = self.analyzer.polarity_scores(str(lyrics))
@@ -43,8 +43,8 @@ class FreeLyricsClassifier:
         elif compound > 0.1:
             # Slightly positive = chill
             mood = 'chill'
-            # Boost confidence: chill is a valid mood, not just uncertainty
-            confidence = 0.5 + (compound - 0.1) * 0.625  # Scale to 0.5-0.75 range
+            # Boost confidence
+            confidence = 0.5 + (compound - 0.1) * 0.625  
         elif compound < -0.5:
             # Very negative = sad
             mood = 'sad'
@@ -57,13 +57,13 @@ class FreeLyricsClassifier:
             else:
                 mood = 'chill'
                 # Boost confidence for near-neutral chill
-                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  # Scale to 0.55-0.7 range
+                confidence = 0.55 + (0.3 - abs(compound)) * 0.5  
         else:
             # Neutral = chill
             mood = 'chill'
             confidence = 0.65  # Neutral songs are confidently "chill"
         
-        # Check for "hyped" keywords (energy-related words)
+        # Check for "hyped" keywords    
         lyrics_lower = str(lyrics).lower()
         hyped_keywords = ['party', 'dance', 'energy', 'fire', 'wild', 'crazy', 'lit', 
                          'pump', 'beat', 'bass', 'drop', 'turnt', 'hype']
@@ -130,7 +130,7 @@ class FreeLyricsClassifier:
         
         print(f"\nFinished! Classified {len(df_to_process)} songs.")
         print(f"Total classifications: {self.api_calls}")
-        print("💰 Cost: $0.00 (FREE!)")
+  
         
         return result_df
 

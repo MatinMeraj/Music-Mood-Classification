@@ -46,9 +46,7 @@ TEST_MAX_SONGS = None
 
 
 def load_audio_model(model_path):
-    """
-    Load the trained audio model.
-    """
+    
     print(f"Loading audio model from {model_path}...")
     
     if not model_path.exists():
@@ -170,7 +168,7 @@ def get_lyrics_predictions(df, max_songs=None):
         print(f"Classifying {max_songs} songs...")
     else:
         print(f"Classifying all {len(df)} songs...")
-    print("Using FREE VADER sentiment analysis (no API costs, runs locally!)")
+    print("Using FREE VADER sentiment analysis  ")
     print()
     
     df_with_predictions = classifier.classify_dataset(
@@ -251,9 +249,9 @@ def main():
     print("Audio predictions and uncertainty metrics added to dataset")
     print()
     
-    # Get lyrics predictions using FREE VADER
+    # Get lyrics predictions using  VADER
     print("Step 3: Getting lyrics predictions...")
-    print("Using FREE VADER sentiment analysis (no API costs, runs locally!)")
+    print("Using  VADER sentiment analysis")
     print("Processing all songs with lyrics...")
     print()
     

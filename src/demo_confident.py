@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-"""
-Small demo for CMPT 310 Project
-Audio mood prediction on 1–2 real songs from the dataset.
-
-Usage:
-    python src/demo.py
-"""
-
 import os
 import sys
 from pathlib import Path
@@ -14,11 +5,6 @@ import numpy as np
 import pandas as pd
 import joblib
 
-# ---------------------------------------------------------
-# CONFIG
-# ---------------------------------------------------------
-
-# Path to your trained audio model pipeline (.joblib)
 AUDIO_MODEL_PATH = "models/new_song_mood_model.joblib"
 
 # Turn this on if you later want to add manual lyrics + VADER again
@@ -36,28 +22,15 @@ from audio_data import (
     PROCESSED,
 )
 
-# Global variables populated at load time
 FEATURE_NAMES_FOR_MODEL = None
 LABEL_NAMES_FROM_JOBLIB = None
 
 
-# ---------------------------------------------------------
 # LOAD MODEL
-# ---------------------------------------------------------
+
 
 def load_audio_model(path: str):
-    """
-    Load the audio model from joblib and pick up feature names + label names.
 
-    Expected joblib structure (from train_audio_model.py):
-      {
-        "pipeline": best_pipe,
-        "features": feature_names,
-        "labels": sorted(y_train.unique()),
-        "results": ...,
-        "version": "milestone2-audio-1.0",
-      }
-    """
     global FEATURE_NAMES_FOR_MODEL, LABEL_NAMES_FROM_JOBLIB
 
     print(f"[INFO] Loading audio model from: {path}")
@@ -118,15 +91,11 @@ def load_audio_model(path: str):
     )
 
 
-# ---------------------------------------------------------
 # LOAD DATASET FOR DEMO
-# ---------------------------------------------------------
+
 
 def load_full_dataset_for_demo():
-    """
-    Load the full processed CSV, normalize it in the same way as during training,
-    and build the feature matrix X and metadata (title, artist, true mood).
-    """
+
     if not PROCESSED.exists():
         raise FileNotFoundError(f"Processed CSV not found: {PROCESSED}")
 
@@ -182,14 +151,11 @@ def load_full_dataset_for_demo():
     return X, meta
 
 
-# ---------------------------------------------------------
+
 # PREDICTION HELPERS
-# ---------------------------------------------------------
+
 
 def get_label_names(model, num_classes: int):
-    """
-    Determine the label names in the correct order, matching predict_proba output.
-    """
     # Prefer labels from joblib if they exist and match the size
     if LABEL_NAMES_FROM_JOBLIB is not None and len(LABEL_NAMES_FROM_JOBLIB) == num_classes:
         return LABEL_NAMES_FROM_JOBLIB
@@ -204,15 +170,12 @@ def get_label_names(model, num_classes: int):
 
 
 def select_high_confidence_indices(model, X, top_k: int = 2):
-    """
-    Run model.predict_proba on all rows in X and return the indices of the
-    top-k most confident predictions (highest max probability).
-    """
+
     if not hasattr(model, "predict_proba"):
         raise AttributeError("Model does not support predict_proba; cannot select by confidence.")
 
-    probs = model.predict_proba(X)  # shape: (N, C)
-    max_probs = probs.max(axis=1)   # shape: (N,)
+    probs = model.predict_proba(X)  
+    max_probs = probs.max(axis=1)   
 
     # Sort by confidence, descending
     order = np.argsort(-max_probs)
@@ -222,9 +185,7 @@ def select_high_confidence_indices(model, X, top_k: int = 2):
 
 
 def print_demo_result(idx, X, meta, model, probs, label_names):
-    """
-    Print a pretty summary for a single song (row index idx).
-    """
+
     row_features = X.iloc[idx]
     row_meta = meta.iloc[idx]
     prob_vec = probs[idx]
@@ -237,10 +198,8 @@ def print_demo_result(idx, X, meta, model, probs, label_names):
     pred_mood = label_names[pred_idx]
     confidence = float(prob_vec[pred_idx])
 
-    print("=" * 70)
     print(f"Song: {title}  |  Artist: {artist}")
     print(f"Dataset true mood: {true_mood}")
-    print("-" * 70)
 
     print("Audio model prediction:")
     print(f"  → Predicted mood: {pred_mood}  (confidence = {confidence:.3f})")
@@ -248,14 +207,14 @@ def print_demo_result(idx, X, meta, model, probs, label_names):
     for mood_label, p in zip(label_names, prob_vec):
         print(f"    {mood_label:>6}: {p:.3f}")
 
-    agreement = "AGREE ✅" if pred_mood == true_mood else "DISAGREE ⚠️"
+    agreement = "AGREE " if pred_mood == true_mood else "DISAGREE "
     print(f"\nOverall: model vs dataset label → {agreement}")
     print("=" * 70 + "\n")
 
 
-# ---------------------------------------------------------
+
 # OPTIONAL: LYRICS (currently disabled)
-# ---------------------------------------------------------
+
 
 def map_compound_to_mood(compound: float) -> str:
     """
@@ -279,26 +238,25 @@ def predict_lyrics_mood(analyzer, lyrics: str):
     return mood, compound, scores
 
 
-# ---------------------------------------------------------
 # MAIN
-# ---------------------------------------------------------
+
 
 def main():
-    # 1) Load trained model
+    # Load trained model
     model = load_audio_model(AUDIO_MODEL_PATH)
 
-    # 2) Load full dataset (same CSV as training) for demo
+    # Load full dataset (same CSV as training) for demo
     X, meta = load_full_dataset_for_demo()
     print(f"[INFO] Loaded {len(X)} songs for demo search.\n")
 
-    # 3) Select top-2 highest-confidence songs
+    # Select top-2 highest-confidence songs
     top_indices, probs = select_high_confidence_indices(model, X, top_k=2)
     num_classes = probs.shape[1]
     label_names = get_label_names(model, num_classes)
 
     print("[INFO] Running demo on top-2 highest-confidence songs...\n")
 
-    # 4) Print results for each selected song
+    # Print results for each selected song
     for idx in top_indices:
         print_demo_result(idx, X, meta, model, probs, label_names)
 

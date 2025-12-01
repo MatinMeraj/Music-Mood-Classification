@@ -26,7 +26,7 @@ OUT_MODEL.parent.mkdir(parents=True, exist_ok=True)
 
 
 def make_pipe(est):
-    """Standard sklearn pipeline: imputer → scaler → classifier."""
+        
     return Pipeline([
         ("imputer", SimpleImputer(strategy="median")),
         ("scaler", StandardScaler()),

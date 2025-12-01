@@ -58,9 +58,7 @@ LABEL_NAMES_FROM_JOBLIB = None
 
 
 def load_audio_model(path: Path):
-    """
-    Load the audio model from joblib and pick up feature names + label names.
-    """
+
     global FEATURE_NAMES_FOR_MODEL, LABEL_NAMES_FROM_JOBLIB
 
     print(f"[INFO] Loading audio model from: {path}")

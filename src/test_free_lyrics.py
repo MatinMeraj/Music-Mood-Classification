@@ -1,8 +1,3 @@
-"""
-Quick test with FREE lyrics classifier (VADER)
-No API needed, no cost!
-"""
-
 import pandas as pd
 import sys
 from pathlib import Path
@@ -92,12 +87,11 @@ def main():
         return
     
     df['audio_prediction'] = audio_predictions
-    print("✅ Audio predictions added")
+    print(" Audio predictions added")
     print()
     
     # Get lyrics prediction
-    print("Getting lyrics predictions (FREE VADER)...")
-    print("💰 Cost: $0.00 (runs locally, no API needed!)")
+    print("Getting lyrics predictions...")
     print()
     
     # Initialize classifier
@@ -174,7 +168,7 @@ def main():
     # Save results
     output_path = DATA_DIR / "free_test_results.csv"
     df_compare.to_csv(output_path, index=False)
-    print(f"✅ Results saved to: {output_path}")
+    print(f" Results saved to: {output_path}")
     print()
     
 

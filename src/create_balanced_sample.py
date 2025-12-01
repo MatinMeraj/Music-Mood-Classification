@@ -1,7 +1,3 @@
-"""
-Create balanced sample from each mood class
-Samples evenly from each class (happy, chill, sad, hyped) to address class imbalance
-"""
 import pandas as pd
 from pathlib import Path
 import numpy as np
@@ -15,14 +11,7 @@ TARGETS = ["happy", "chill", "sad", "hyped"]
 SAMPLES_PER_CLASS = 5000  # Adjust this number based on your needs
 
 def create_balanced_sample(input_path, output_path, samples_per_class=5000):
-    """
-    Create balanced sample by taking equal samples from each mood class.
-    
-    Args:
-        input_path: Path to input CSV file
-        output_path: Path to save balanced sample
-        samples_per_class: Number of samples to take from each class
-    """
+
     print(f"Loading dataset from {input_path}...")
     df = pd.read_csv(input_path)
     print(f"Loaded {len(df)} total songs")

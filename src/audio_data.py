@@ -72,10 +72,6 @@ def balanced_downsample(df: pd.DataFrame,
                         label_col: str = "mood",
                         max_per_class: int = None,
                         random_state: int = RANDOM_STATE) -> pd.DataFrame:
-    """
-    Downsample each mood class to at most max_per_class rows,
-    keeping the class distribution roughly balanced.
-    """
     if max_per_class is None:
         return df
 

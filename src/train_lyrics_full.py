@@ -1,8 +1,3 @@
-"""
-Train/Process lyrics classifier on larger dataset
-FREE version using VADER - can process entire dataset for free!
-"""
-
 import pandas as pd
 import sys
 from pathlib import Path
@@ -32,7 +27,7 @@ def load_audio_model(model_path):
     
     try:
         model_data = joblib.load(model_path)
-        print("✅ Audio model loaded successfully!")
+        print(" Audio model loaded successfully!")
         return model_data
     except Exception as e:
         print(f"ERROR loading model: {e}")
@@ -58,7 +53,7 @@ def get_audio_predictions(df, model_data):
     # Get predictions
     try:
         predictions = pipeline.predict(X)
-        print(f"✅ Got {len(predictions)} audio predictions")
+        print(f" Got {len(predictions)} audio predictions")
         return predictions
     except Exception as e:
         print(f"ERROR getting predictions: {e}")
@@ -134,7 +129,7 @@ def main():
     )
     
     if df_with_lyrics is None:
-        print("❌ ERROR: Could not get lyrics predictions")
+        print(" ERROR: Could not get lyrics predictions")
         return
     
     print()
