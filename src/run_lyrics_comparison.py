@@ -136,7 +136,7 @@ def get_audio_predictions(df, model_data):
 
 
 def get_lyrics_predictions(df, max_songs=None):
-    print("\nGetting lyrics predictions using VADER (FREE)...")
+    print("\nGetting lyrics predictions using VADER")
     
     lyrics_column = 'text'  
     if lyrics_column not in df.columns:
@@ -188,13 +188,9 @@ def main():
 
     
     # Load dataset
-    print("Step 1: Loading dataset...")
     print(f"Loading from {DATASET_PATH}...")
-    print("(This may take a moment for large datasets...)")
     if not DATASET_PATH.exists():
         print(f"ERROR: Dataset not found at {DATASET_PATH}")
-        print("Please make sure the dataset exists.")
-        print("You may need to download it from Google Drive (as mentioned by Nadine).")
         return
     
     # TEST MODE Only read first N rows for quick testing
@@ -209,7 +205,7 @@ def main():
     print()
     
     # Get audio predictions
-    print("Step 2: Getting audio predictions...")
+    print("Getting audio predictions")
     model_data = load_audio_model(MODEL_PATH)
     
     if model_data is None:
@@ -250,10 +246,7 @@ def main():
     print()
     
     # Get lyrics predictions using  VADER
-    print("Step 3: Getting lyrics predictions...")
-    print("Using  VADER sentiment analysis")
-    print("Processing all songs with lyrics...")
-    print()
+    print("Getting lyrics predictions with VADER sentiment analysis")
     
     df_with_lyrics = get_lyrics_predictions(df, max_songs=TEST_MAX_SONGS)  
     
@@ -268,7 +261,7 @@ def main():
         )
     
     # Compare predictions
-    print("\nStep 4: Comparing predictions...")
+    print("\nComparing predictions...")
     results = compare_predictions(
         df_with_lyrics,
         audio_pred_col='audio_prediction',
@@ -277,7 +270,7 @@ def main():
     )
     
     # create basic visualization
-    print("\nStep 5: Creating basic comparison visualization...")
+    print("\nCreating basic comparison visualization.")
     create_comparison_visualization(
         df_with_lyrics,
         audio_pred_col='audio_prediction',
@@ -286,7 +279,7 @@ def main():
     )
     
     #create enhanced visualizations
-    print("\nCreating enhanced visualizations...")
+    print("\nCreating enhanced visualizations")
     
     print(" Confidence distributions")
     plot_audio_confidence_distribution(save_path=str(BASE / "figures" / "audio_confidence_distribution.png"))
@@ -331,7 +324,7 @@ def main():
         plot_lyrics_confusion_matrix_vs_true(df_with_lyrics, save_path=str(BASE / "figures" / "lyrics_confusion_matrix_vs_true.png"))
     
     # Save results
-    print("\nSaving results...")
+    print("\nSaving results.")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     
     # Ensure all prediction columns are strings and confidence columns are floats before saving

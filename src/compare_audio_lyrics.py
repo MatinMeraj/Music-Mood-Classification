@@ -15,10 +15,10 @@ def compare_predictions(df, audio_pred_col='audio_prediction', lyrics_pred_col='
     df_clean = df.dropna(subset=[audio_pred_col, lyrics_pred_col])
     
     if len(df_clean) == 0:
-        print("ERROR: No rows with both audio and lyrics predictions found")
+        print("Error: No rows with both audio and lyrics predictions found")
         return None
     
-    print(f"Comparing {len(df_clean)} songs with both predictions...")
+    print(f"Comparing {len(df_clean)} songs with both predictions")
     print()
     
     # Calculate agreement
@@ -53,7 +53,7 @@ def compare_predictions(df, audio_pred_col='audio_prediction', lyrics_pred_col='
     # Find disagreement patterns
     disagreement_df = df_clean[df_clean[audio_pred_col] != df_clean[lyrics_pred_col]]
     if len(disagreement_df) > 0:
-        print("Disagreement patterns (audio -> lyrics):")
+        print("Disagreement patterns (audio to lyrics):")
         disagreement_patterns = disagreement_df.groupby([audio_pred_col, lyrics_pred_col]).size()
         for (audio, lyrics), count in disagreement_patterns.items():
             print(f"  {audio:8s} -> {lyrics:8s}: {count} songs")
@@ -78,13 +78,13 @@ def compare_predictions(df, audio_pred_col='audio_prediction', lyrics_pred_col='
 def create_comparison_visualization(df, audio_pred_col='audio_prediction', 
                                    lyrics_pred_col='lyrics_prediction', 
                                    save_path='audio_lyrics_comparison.png'):
-    print(f"Creating visualization...")
+    print(f"Creating visualization.")
     
     # Filter out rows with missing predictions
     df_clean = df.dropna(subset=[audio_pred_col, lyrics_pred_col])
     
     if len(df_clean) == 0:
-        print("ERROR: No data to visualize!")
+        print("Error: No data to visualize!")
         return
     
     # Set up the plot
@@ -180,18 +180,17 @@ def main():
         print("Please run the prediction scripts first to generate predictions.")
         print()
         print("Expected columns in dataset:")
-        print("  - audio_prediction: Predictions from audio model")
-        print("  - lyrics_prediction: Predictions from lyrics model")
-        print("  - mood: True labels (optional)")
+        print("- audio_prediction: Predictions from audio model")
+        print("- lyrics_prediction: Predictions from lyrics model")
         return
     
     # Load dataset
-    print(f"Loading dataset from {dataset_path}...")
+    print(f"Loading dataset from {dataset_path}")
     df = pd.read_csv(dataset_path)
     
     # Check if required columns exist
     if 'audio_prediction' not in df.columns or 'lyrics_prediction' not in df.columns:
-        print("ERROR: Required columns not found in dataset!")
+        print("Error: Required columns not found in dataset")
         print("Expected columns: audio_prediction, lyrics_prediction")
         print(f"Found columns: {list(df.columns)}")
         return

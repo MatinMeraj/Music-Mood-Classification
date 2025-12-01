@@ -201,7 +201,7 @@ def plot_mood_map(df=None, method="tsne", n_samples=3000, save_path=None):
             print("ERROR: sklearn.manifold.TSNE not available. Skipping t-SNE mood map.")
         return
 
-    print(f"Creating {method.upper()} mood map (up to {n_samples} songs)...")
+    print(f"Creating {method.upper()} mood map (up to {n_samples} songs).")
 
     try:
         # Load audio data
@@ -246,10 +246,10 @@ def plot_mood_map(df=None, method="tsne", n_samples=3000, save_path=None):
                 perplexity=perplexity,
                 n_iter=n_iter,
             )
-            print(f"Computing t-SNE embedding (n={n_points}, perplexity={perplexity})...")
+            print(f"Computing t-SNE embedding (n={n_points}, perplexity={perplexity})")
         elif method_lower == "pca":
             reducer = PCA(n_components=2, random_state=42)
-            print("Computing PCA embedding (fast)...")
+            print("Computing PCA embedding (fast)")
         else:
             print(f"ERROR: Unknown method '{method}'. Use 'tsne' or 'pca'.")
             return
@@ -761,11 +761,6 @@ def plot_lyrics_confusion_matrix_vs_true(df, lyrics_pred_col='lyrics_prediction'
 
 def main():
     """Create all Milestone 2 visualizations (one PNG per chart)."""
-    print("=" * 60)
-    print("Enhanced Visualizations for Milestone 2")
-    print("Creating one PNG file per visualization")
-    print("=" * 60)
-    print()
 
     # Check predictions file
     if not PREDICTIONS_PATH.exists():
@@ -773,14 +768,13 @@ def main():
         print("Run the script that generates 'songs_with_predictions.csv' first.")
         return
 
-    print(f"Loading predictions from {PREDICTIONS_PATH}...")
+    print(f"Loading predictions from {PREDICTIONS_PATH}")
     df = pd.read_csv(PREDICTIONS_PATH)
     print(f"Loaded {len(df)} songs")
     print()
 
     # Confidence distributions
-
-    print("3a. Creating confidence distribution charts...")
+    print("Creating confidence distribution charts")
     plot_audio_confidence_distribution()
     plot_lyrics_confidence_distribution(df)
     plot_audio_confidence_by_mood()
@@ -788,18 +782,17 @@ def main():
     print()
 
     # Mood maps
-
-    print("3b. Creating mood maps...")
-    print("  - PCA (fast)...")
+    print("Creating mood maps")
+    print(" - PCA.")
     plot_mood_map(df=None, method="pca", n_samples=10000)
-    print("  - t-SNE (reduced sample for speed)...")
+    print("  - t-SNE.")
     plot_mood_map(df=None, method="tsne", n_samples=2000)
     print()
 
  
     # Audio vs Lyrics comparisons
 
-    print("3d. Creating audio vs lyrics comparison charts...")
+    print("Creating audio vs lyrics comparison charts")
     plot_audio_prediction_distribution(df)
     plot_lyrics_prediction_distribution(df)
     plot_audio_lyrics_agreement_pie(df)
@@ -812,13 +805,12 @@ def main():
         plot_audio_confusion_matrix_vs_true(df)
         plot_lyrics_confusion_matrix_vs_true(df)
     else:
-        print("NOTE: 'mood' column not found – skipping confusion matrices vs true labels.")
+        print("NOTE: 'mood' column not found, skipping confusion matrices vs true labels.")
     print()
 
     print("=" * 60)
     print("All enhanced visualizations created!")
     print(f"Figures saved in: {FIG_DIR}")
-    print("Each visualization is saved as a separate PNG file.")
     print("=" * 60)
 
 

@@ -33,14 +33,14 @@ def load_audio_model(path: str):
 
     global FEATURE_NAMES_FOR_MODEL, LABEL_NAMES_FROM_JOBLIB
 
-    print(f"[INFO] Loading audio model from: {path}")
+    print(f"Loading audio model from: {path}")
     obj = joblib.load(path)
-    print(f"[INFO] Raw loaded object type: {type(obj)}")
+    print(f"Raw loaded object type: {type(obj)}")
 
     # Case 1: saved directly as a model/pipeline
     if hasattr(obj, "predict"):
         model = obj
-        print("[INFO] Loaded object is a model with .predict().")
+        print("Loaded object is a model with .predict().")
         FEATURE_NAMES_FOR_MODEL = (
             list(model.feature_names_in_) if hasattr(model, "feature_names_in_") else None
         )
@@ -49,15 +49,15 @@ def load_audio_model(path: str):
 
     # Case 2: dict with "pipeline", "labels", ...
     if isinstance(obj, dict):
-        print(f"[INFO] Loaded a dict with keys: {list(obj.keys())}")
+        print(f"Loaded a dict with keys: {list(obj.keys())}")
 
         # Label names
         if "labels" in obj:
             LABEL_NAMES_FROM_JOBLIB = list(obj["labels"])
-            print(f"[INFO] labels from joblib: {LABEL_NAMES_FROM_JOBLIB}")
+            print(f"labels from joblib: {LABEL_NAMES_FROM_JOBLIB}")
         else:
             LABEL_NAMES_FROM_JOBLIB = None
-            print("[WARN] No 'labels' found; will fall back to model.classes_.")
+            print("Warning! No 'labels' found; will fall back to model.classes_.")
 
         # Get the pipeline
         model = obj.get("pipeline", None)
@@ -66,7 +66,7 @@ def load_audio_model(path: str):
             for key, val in obj.items():
                 if hasattr(val, "predict"):
                     model = val
-                    print(f"[INFO] Found model inside dict at key: '{key}'")
+                    print(f"Found model inside dict at key: '{key}'")
                     break
 
         if model is None:
@@ -99,7 +99,7 @@ def load_full_dataset_for_demo():
     if not PROCESSED.exists():
         raise FileNotFoundError(f"Processed CSV not found: {PROCESSED}")
 
-    print(f"[INFO] Loading dataset from: {PROCESSED}")
+    print(f"Loading dataset from: {PROCESSED}")
     df = pd.read_csv(PROCESSED)
     df = normalize_features(df)
 
@@ -109,7 +109,7 @@ def load_full_dataset_for_demo():
     # Keep only target moods
     df = df[df["mood"].isin(TARGETS)].copy()
     if df.empty:
-        raise ValueError("No rows remain after filtering to TARGETS. Check your mapping step.")
+        raise ValueError("No rows remain after filtering to TARGETS. Check mappign step")
 
     if "track_name" in df.columns and "artists" in df.columns:
         df = df.drop_duplicates(subset=["track_name", "artists", "mood"], keep="first")
@@ -165,7 +165,7 @@ def get_label_names(model, num_classes: int):
         return list(model.classes_)
 
     # Last resort: generic names
-    print("[WARN] Could not match label names exactly; using generic names.")
+    print("Could not match label names exactly; using generic names.")
     return [f"class_{i}" for i in range(num_classes)]
 
 
@@ -219,7 +219,6 @@ def print_demo_result(idx, X, meta, model, probs, label_names):
 def map_compound_to_mood(compound: float) -> str:
     """
     Simple heuristic to map VADER compound score to 4 moods.
-    Only used if you enable USE_LYRICS and manually supply lyrics.
     """
     if compound <= -0.3:
         return "sad"
@@ -247,14 +246,14 @@ def main():
 
     # Load full dataset (same CSV as training) for demo
     X, meta = load_full_dataset_for_demo()
-    print(f"[INFO] Loaded {len(X)} songs for demo search.\n")
+    print(f"Loaded {len(X)} songs for demo search.\n")
 
     # Select top-2 highest-confidence songs
     top_indices, probs = select_high_confidence_indices(model, X, top_k=2)
     num_classes = probs.shape[1]
     label_names = get_label_names(model, num_classes)
 
-    print("[INFO] Running demo on top-2 highest-confidence songs...\n")
+    print("Running demo on top-2 highest-confidence songs\n")
 
     # Print results for each selected song
     for idx in top_indices:

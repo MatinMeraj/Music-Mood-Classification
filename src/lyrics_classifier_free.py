@@ -100,8 +100,7 @@ class FreeLyricsClassifier:
         predictions = []
         confidences = []
         
-        print(f"Classifying {len(df_to_process)} songs using FREE VADER...")
-        print("(No API cost, runs locally!)")
+        print(f"Classifying {len(df_to_process)} songs using free VADER")
         print()
         
         for idx, row in df_to_process.iterrows():

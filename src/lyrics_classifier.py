@@ -119,7 +119,6 @@ class LyricsClassifier:
         confidences = []
         
         print(f"Classifying {len(df_to_process)} songs using OpenAI API...")
-        print("This may take a while. Please be patient.\n")
         
         for idx, row in df_to_process.iterrows():
             lyrics = row.get(lyrics_column, '')
@@ -156,16 +155,12 @@ class LyricsClassifier:
 
 def main():
 
-    print("=" * 60)
     print("Lyrics-based Mood Classifier")
-    print("=" * 60)
-    print()
     
     api_key = os.getenv('OPENAI_API_KEY')
     if not api_key:
         print("ERROR: OPENAI_API_KEY environment variable not set.")
         print("Please set it before running this script.")
-        print("Example: export OPENAI_API_KEY='your-api-key-here'")
         return
 
     print("Initializing lyrics classifier...")

@@ -49,12 +49,12 @@ BASE_AUDIO_KEYS = [
     "loudness",
 ]
 
-# Dynamically filled after loading the model
+# this will dynamically filled after loading the model
 FEATURE_NAMES_FOR_MODEL = None
 LABEL_NAMES_FROM_JOBLIB = None
 
 
-# MODEL LOADING
+#load the model
 
 
 def load_audio_model(path: Path):
@@ -65,7 +65,7 @@ def load_audio_model(path: Path):
     obj = joblib.load(path)
     print(f"[INFO] Raw loaded object type: {type(obj)}")
 
-    # Case 1: direct model
+
     if hasattr(obj, "predict"):
         model = obj
         print("[INFO] Loaded object is a model with .predict().")
@@ -74,25 +74,24 @@ def load_audio_model(path: Path):
         )
         LABEL_NAMES_FROM_JOBLIB = None
         return model
-
-    # Case 2: dict with model + metadata
+    
     if isinstance(obj, dict):
         print(f"[INFO] Loaded a dict with keys: {list(obj.keys())}")
 
         # Label names from label encoder
         if "label_encoder_classes" in obj:
             LABEL_NAMES_FROM_JOBLIB = list(obj["label_encoder_classes"])
-            print(f"[INFO] label_encoder_classes: {LABEL_NAMES_FROM_JOBLIB}")
+            print(f"label_encoder_classes: {LABEL_NAMES_FROM_JOBLIB}")
         else:
             LABEL_NAMES_FROM_JOBLIB = None
-            print("[WARN] No label_encoder_classes found; will fall back to model.classes_.")
+            print("No label_encoder_classes found; will fall back to model.classes_.")
 
-        # Find actual model
+        #find the actual
         model = None
         for key, val in obj.items():
             if hasattr(val, "predict"):
                 model = val
-                print(f"[INFO] Found model inside dict at key: '{key}'")
+                print(f"Found model inside dict at key: '{key}'")
                 break
 
         if model is None:
@@ -104,10 +103,10 @@ def load_audio_model(path: Path):
         # Feature names from training, if available
         if hasattr(model, "feature_names_in_"):
             FEATURE_NAMES_FOR_MODEL = list(model.feature_names_in_)
-            print(f"[INFO] feature_names_in_ from model: {FEATURE_NAMES_FOR_MODEL}\n")
+            print(f"feature_names_in_ from model: {FEATURE_NAMES_FOR_MODEL}\n")
         else:
             FEATURE_NAMES_FOR_MODEL = None
-            print("[WARN] Model has no feature_names_in_; will fall back to base keys.\n")
+            print("Model has no feature_names_in_; will fall back to base keys.\n")
 
         return model
 
@@ -118,7 +117,7 @@ def load_audio_model(path: Path):
     )
 
 
-# FEATURE ENGINEERING FOR ONE SONG
+#feature engineer for one song 
 
 
 def build_feature_row_for_model(base_features: dict) -> dict:
@@ -171,7 +170,7 @@ def build_feature_row_for_model(base_features: dict) -> dict:
 
 
 
-# LYRICS to  MOOD w vader
+#lyrics mood from vader
 
 def map_compound_to_mood(compound: float) -> str:
     if compound <= -0.3:
@@ -220,7 +219,7 @@ def predict_lyrics_mood(analyzer, lyrics: str):
     return mood, compound, scores
 
 
-# PICK HOLDOUT SONGS 
+#pick songs that are in holdout
 
 
 def build_key(df: pd.DataFrame) -> pd.Series:
@@ -237,11 +236,11 @@ def build_key(df: pd.DataFrame) -> pd.Series:
 
 
 def load_holdout_demo_songs(n: int = 2):
-    print(f"[INFO] Loading full dataset from: {FULL_DATA_PATH}")
+    print(f"Loading full dataset from: {FULL_DATA_PATH}")
     full = pd.read_csv(FULL_DATA_PATH)
     full = normalize_features(full)
 
-    print(f"[INFO] Loading balanced 20k dataset from: {BALANCED_PATH}")
+    print(f"Loading balanced 20k dataset from: {BALANCED_PATH}")
     balanced = pd.read_csv(BALANCED_PATH)
     balanced = normalize_features(balanced)
 
@@ -254,10 +253,10 @@ def load_holdout_demo_songs(n: int = 2):
     balanced["_key"] = build_key(balanced)
 
     holdout = full[~full["_key"].isin(balanced["_key"])].copy()
-    print(f"[INFO] Holdout pool size (full - balanced): {len(holdout)} rows")
+    print(f"Holdout size (full - balanced): {len(holdout)} rows")
 
     if holdout.empty:
-        print("[WARN] Holdout set is empty – falling back to random rows from full dataset.")
+        print("Holdout set is empty, falling back to random rows from full dataset.")
         holdout = full.copy()
 
     # Find lyrics column if present
@@ -268,7 +267,7 @@ def load_holdout_demo_songs(n: int = 2):
             break
 
     if lyrics_col is None and USE_LYRICS:
-        print("[WARN] No lyrics column found; demo will run audio-only.")
+        print("No lyrics column found; demo will run audio-only.")
 
     # Sample n songs
     n_sample = min(n, len(holdout))
@@ -295,15 +294,15 @@ def load_holdout_demo_songs(n: int = 2):
 def print_demo_result(song, audio_pred, lyrics_pred=None):
     audio_mood, audio_conf, audio_probs = audio_pred
 
-    print("=" * 70)
+    
     print(f"Song: {song['title']}  (ID: {song['id']})")
-    print("-" * 70)
+
 
     print("Audio model:")
     if audio_conf is not None:
-        print(f"  → Predicted mood: {audio_mood}  (confidence = {audio_conf:.3f})")
+        print(f"  -> Predicted mood: {audio_mood}  (confidence = {audio_conf:.3f})")
     else:
-        print(f"  → Predicted mood: {audio_mood}  (no probability available)")
+        print(f"  -> Predicted mood: {audio_mood}  (no probability available)")
 
     if audio_probs is not None:
         probs, label_names = audio_probs
@@ -314,13 +313,13 @@ def print_demo_result(song, audio_pred, lyrics_pred=None):
     if USE_LYRICS and lyrics_pred is not None:
         lyrics_mood, compound, scores = lyrics_pred
         print("\nLyrics model (VADER):")
-        print(f"  → Predicted mood: {lyrics_mood}  (compound = {compound:.3f})")
+        print(f"  -> Predicted mood: {lyrics_mood}  (compound = {compound:.3f})")
         print(f"  Sentiment scores: {scores}")
 
         agreement = "Agree" if audio_mood == lyrics_mood else "Disagree"
         print(f"\nOverall: Audio vs Lyrics = {agreement}")
 
-    print("=" * 70 + "\n")
+   
 
 
 def main():
