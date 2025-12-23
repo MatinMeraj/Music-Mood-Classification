@@ -1,4 +1,4 @@
-# Spotify Song Mood Classifier
+#Song-MoodMapper
 
 A machine learning system for classifying songs into mood categories (happy, chill, sad, hyped) using audio features and lyrics analysis.
 
