@@ -1,4 +1,4 @@
-#Song-MoodMapper
+#Muisc-Mood-Classification
 
 A machine learning system for classifying songs into mood categories (happy, chill, sad, hyped) using audio features and lyrics analysis.
 
